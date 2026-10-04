@@ -22,9 +22,11 @@ const out = path.join(__dirname, 'dist');
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 
-for (const f of ['index.html', 'script.js', 'radio.js', 'styles.css', 'tailwind-config.js', 'logo.png', 'logo-text.png', 'logo-zunk.svg', 'logo-alien.png', 'rimk-like.png', 'zunk-dislike.png']) {
+for (const f of ['index.html', 'script.js', 'avatar.js', 'radio.js', 'styles.css', 'tailwind-config.js', 'logo.png', 'logo-text.png', 'logo-zunk.svg', 'logo-alien.png', 'rimk-like.png', 'zunk-dislike.png']) {
   fs.copyFileSync(path.join(__dirname, f), path.join(out, f));
 }
+// Avatares: PNGs das camadas (alien, acessórios, fundos e ícones)
+fs.cpSync(path.join(__dirname, 'avatar'), path.join(out, 'avatar'), { recursive: true });
 fs.writeFileSync(path.join(out, 'supabase-config.json'), JSON.stringify({ url, anonKey }));
 
 // Chave da YouTube Data API (opcional): melhora busca, playlists e detecção de lives.

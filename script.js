@@ -209,9 +209,10 @@
     /* ============================================================
        CAMADA DE DADOS  (local  ou  firebase)
        ============================================================ */
+    let myAvatar = null;   // receita do avatar da conta logada (veja avatar.js)
     const store = { mode: 'local', getOffset: () => 0, isHost: () => false, isCohost: () => false, isAdmin: () => false, setCohost: () => false, kick: () => false, leave: () => {},
         transferHost: () => false, memberCount: () => 0, hasPass: () => false, getUsers: () => [], onRole: null,
-        setColor: () => {} };
+        setColor: () => {}, setAvatar: () => {} };
     // modos com anfitrião de verdade (travar controles, expulsar, passar anfitrião, senha de sala)
     const hostMode = () => store.mode === 'p2p' || store.mode === 'supabase';
 
@@ -622,7 +623,7 @@
                 const st = ch.presenceState();
                 users = Object.entries(st).map(([uid, metas]) => {
                     const m = (metas && metas[0]) || {};
-                    return { id: uid, name: clip(noCtl(m.name), 30) || 'Convidado', color: safeColor(m.color) };
+                    return { id: uid, name: clip(noCtl(m.name), 30) || 'Convidado', color: safeColor(m.color), av: window.RimkAvatar ? RimkAvatar.clean(m.av) : null };
                 });
                 emitPresence();
             });
@@ -652,7 +653,7 @@
             setTimeout(() => { heartbeat().catch(() => {}); }, 2500);
         }
         function track() {
-            if (channel) channel.track({ name: clip(clientUsername, 30), color: myColor }).catch(() => {});
+            if (channel) channel.track({ name: clip(clientUsername, 30), color: myColor, av: myAvatar || null }).catch(() => {});
         }
         function closeChannel() {
             clearInterval(beatTimer); beatTimer = null;
@@ -765,7 +766,8 @@
         store.joinPresence = (id) => {
             openChannel(id);
             store.setColor = () => track();
-            return () => { store.setColor = () => {}; };
+            store.setAvatar = () => track();
+            return () => { store.setColor = () => {}; store.setAvatar = () => {}; };
         };
         store.subscribePresence = (id, cb) => {
             presenceCbs.add(cb);
@@ -1373,11 +1375,12 @@
         const rows = [...byUser.entries()].map(([k, u]) => ({ k, ...u }));
         rows.sort((a, b) => (b.up - a.up) || (a.down - b.down) || a.name.localeCompare(b.name));
         const top = rows.slice(0, RANK_MAX);
+        avFetch(top.map(r => r.name));
         $('rank-empty').hidden = top.length > 0 || !rankLoaded;
         list.innerHTML = top.map((r, k) => {
             const n = esc(r.name);
             const sub = r.songs === 1 ? '1 música curtida' : r.songs + ' músicas curtidas';
-            return `<li class="rank-row${k === 0 ? ' is-first' : ''}${r.k === curWho ? ' is-now' : ''}"><span class="rank-pos">${RANK_ICON[k] || (k + 1)}</span><span class="rank-who"><span class="rank-name" title="${n}">${n}</span><span class="rank-sub">${sub}</span></span><span class="rank-likes" title="${r.up} likes no total"><i class="fa-solid fa-thumbs-up" aria-hidden="true"></i>${r.up}</span></li>`;
+            return `<li class="rank-row${k === 0 ? ' is-first' : ''}${r.k === curWho ? ' is-now' : ''}"><span class="rank-pos">${RANK_ICON[k] || (k + 1)}</span>${avBubble(r.name, 'rank-av')}<span class="rank-who"><span class="rank-name" title="${n}">${n}</span><span class="rank-sub">${sub}</span></span><span class="rank-likes" title="${r.up} likes no total"><i class="fa-solid fa-thumbs-up" aria-hidden="true"></i>${r.up}</span></li>`;
         }).join('');
     }
     // busca os votos das músicas da sala que ainda não estão no cache (ou todas, se force)
@@ -1486,14 +1489,75 @@
     });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleColorPicker(false); });
 
+
+    /* ---------- Avatar (avatar.js): bolinha com o avatar da pessoa, ou a inicial se ela ainda não criou um ---------- */
+    function avBubble(name, cls, col) {
+        const mineName = String(name).toLowerCase() === String(clientUsername || '').toLowerCase();
+        const av = window.RimkAvatar ? (mineName ? myAvatar : RimkAvatar.get(name)) : null;
+        col = col || userColors.get(name) || nameColor(name);
+        const ini = esc((String(name).trim()[0] || '?').toUpperCase());
+        return `<span class="${cls}${av ? ' has-av' : ''}" style="color:${col};border-color:${col}">${av ? RimkAvatar.html(av) : ini}</span>`;
+    }
+    // busca no servidor o avatar de quem aparece no ranking e ainda não conhecemos (ex.: quem já saiu da sala)
+    function avFetch(names) {
+        if (!window.RimkAvatar || !store.sb) return;
+        RimkAvatar.fetchMissing((fn, args) => store.sb.rpc(fn, args), names, () => { if (currentRoomId) renderRoomRank(); });
+    }
+    function paintChipAvatar() {
+        const box = $('user-chip-av'), ico = $('user-chip-icon'); if (!box) return;
+        const has = !!(myAvatar && window.RimkAvatar);
+        box.innerHTML = has ? RimkAvatar.html(myAvatar) : '';
+        box.classList.toggle('hidden', !has);
+        if (ico) ico.classList.toggle('hidden', has);
+    }
+    async function loadMyAvatar() {
+        myAvatar = null; paintChipAvatar();
+        if (!window.RimkAvatar || !store.sb || !currentUser) return;
+        const who = currentUser;
+        try {
+            const { data, error } = await store.sb.rpc('avatars_for', { p_names: [who] });
+            if (error) throw error;
+            if (currentUser !== who) return;      // trocou de conta no meio do caminho
+            const row = (data || [])[0];
+            myAvatar = row ? RimkAvatar.clean(row.avatar) : null;
+            RimkAvatar.remember(who, myAvatar);
+            paintChipAvatar();
+            store.setAvatar();
+            if (currentRoomId) onPresence(roomUsers);
+        } catch (e) { console.warn('Não consegui carregar o avatar (rode supabase-avatar.sql):', e && e.message || e); }
+    }
+    async function saveMyAvatar(av) {
+        const { error } = await store.sb.rpc('set_my_avatar', { p_avatar: av });
+        if (error) {
+            console.error(error);
+            showNotification('Não consegui salvar o avatar. O arquivo supabase-avatar.sql já foi rodado no Supabase?', 'error');
+            return false;
+        }
+        myAvatar = av; RimkAvatar.remember(currentUser, av);
+        paintChipAvatar(); store.setAvatar();
+        if (currentRoomId) { onPresence(roomUsers); renderRoomRank(); }
+        showNotification('Avatar salvo na sua conta!', 'info');
+        return true;
+    }
+    window.openAvatarEditor = function () {
+        if (!window.RimkAvatar) return;
+        if (store.mode !== 'supabase' || !currentUser) return showNotification('Entre na sua conta para criar o seu avatar.', 'info');
+        RimkAvatar.open({ current: myAvatar, onSave: saveMyAvatar });
+    };
+
     /* ---------- Pessoas na sala ---------- */
     function onPresence(list) {
         const me = store.myId();
         const users = (Array.isArray(list) ? list : []).filter(u => u && u.id)
-            .map(u => ({ id: u.id, name: clip(u.name, 30) || 'Convidado', host: !!u.host, cohost: !!u.cohost, color: safeColor(u.color) }));
-        if (!users.some(u => u.id === me)) users.unshift({ id: me, name: clientUsername, host: false, color: myColor });
+            .map(u => ({ id: u.id, name: clip(u.name, 30) || 'Convidado', host: !!u.host, cohost: !!u.cohost, color: safeColor(u.color), av: u.av || null }));
+        if (!users.some(u => u.id === me)) users.unshift({ id: me, name: clientUsername, host: false, color: myColor, av: myAvatar });
         const colorsBefore = JSON.stringify([...userColors]);
-        users.forEach(u => { if (!u.color) u.color = nameColor(u.name); if (u.id === me) u.color = myColor; userColors.set(u.name, u.color); });
+        users.forEach(u => {
+            if (!u.color) u.color = nameColor(u.name);
+            if (u.id === me) { u.color = myColor; u.av = myAvatar; }
+            if (u.av && window.RimkAvatar) RimkAvatar.remember(u.name, u.av);   // guarda para o ranking e o chat
+            userColors.set(u.name, u.color);
+        });
         roomUsers = users;
         renderColorPicker();
         if (JSON.stringify([...userColors]) !== colorsBefore) refreshChatColors();
@@ -1533,7 +1597,7 @@
             const crown = u.host ? '<i class="fa-solid fa-crown member-crown" title="Anfitrião"></i>'
                 : (u.cohost ? '<i class="fa-solid fa-crown member-crown cohost" title="Sub-host"></i>' : '');
             return `<div class="member-card" title="${esc(u.name)}">
-                <div class="member-avatar" style="color:${u.color};border-color:${u.color};box-shadow:0 0 14px ${u.color}44">${ini}${crown}</div>
+                <div class="member-avatar${u.av ? ' has-av' : ''}" style="color:${u.color};border-color:${u.color};box-shadow:0 0 14px ${u.color}44">${(u.av && window.RimkAvatar) ? RimkAvatar.html(u.av) : ini}${crown}</div>
                 <div class="member-name">${esc(u.name)}${mine ? ' <span class="text-[11px] text-[#8E9A88]">(você)</span>' : ''}</div>
                 <div class="member-status"><span></span>${u.host ? 'Anfitrião' : (u.cohost ? 'Sub-host' : 'Online')}</div>
                 ${tools}
@@ -2382,7 +2446,7 @@
                 quote = `<div class="reply-quote" data-goto="${esc(m.replyTo.id)}" style="border-color:${qc}"><div class="font-semibold truncate" style="color:${qc}">${esc(m.replyTo.user)}</div><div class="truncate text-[#C3CBBE]">${esc(m.replyTo.text)}</div></div>`;
             }
             const head = first
-                ? `<span class="flex items-center gap-2 mb-1 ${me ? 'flex-row-reverse' : ''}"><span class="chat-avatar" style="color:${col};border-color:${col}">${esc((String(m.user).trim()[0] || '?').toUpperCase())}</span><span class="text-xs font-mono font-semibold" style="color:${col};text-shadow:0 0 8px ${col}aa">${esc(m.user)}</span></span>`
+                ? `<span class="flex items-center gap-2 mb-1 ${me ? 'flex-row-reverse' : ''}">${avBubble(m.user, 'chat-avatar', col)}<span class="text-xs font-mono font-semibold" style="color:${col};text-shadow:0 0 8px ${col}aa">${esc(m.user)}</span></span>`
                 : '';
             const corner = first ? (me ? 'rounded-tr-sm' : 'rounded-tl-sm') : '';   // só o 1º balão do grupo tem a "pontinha"
             html += `
@@ -2453,6 +2517,7 @@
         store.uid = user.id;
         $('auth-pass').value = ''; $('auth-pass2').value = ''; setAuthError('');
         showLoggedIn();
+        loadMyAvatar();
         if (pendingRoom) { const id = pendingRoom; pendingRoom = null; setTimeout(() => pickRoom(id), 60); }   // clicou numa sala antes de entrar
     }
 
@@ -2504,6 +2569,7 @@
     function resetToLogin(expired) {
         if (currentRoomId) { try { leaveRoomUI(); } catch (e) {} }
         currentUser = null; pendingRoom = null; store.uid = null;
+        myAvatar = null; paintChipAvatar();
         $('setup-view').classList.add('hidden');
         $('user-chip').classList.add('hidden'); $('user-chip').classList.remove('flex');
         $('auth-view').classList.remove('hidden');
