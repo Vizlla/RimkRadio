@@ -26,7 +26,12 @@ for (const f of ['index.html', 'script.js', 'avatar.js', 'radio.js', 'styles.css
   fs.copyFileSync(path.join(__dirname, f), path.join(out, f));
 }
 // Avatares: PNGs das camadas (alien, acessórios, fundos e ícones)
-fs.cpSync(path.join(__dirname, 'avatar'), path.join(out, 'avatar'), { recursive: true });
+// Avatares: aceita as pastas dentro de avatar/ OU soltas na raiz do repositório (base, item, icon, bg)
+for (const sub of ['base', 'item', 'icon', 'bg']) {
+  const src = [path.join(__dirname, 'avatar', sub), path.join(__dirname, sub)].find((p) => fs.existsSync(p) && fs.statSync(p).isDirectory());
+  if (src) fs.cpSync(src, path.join(out, 'avatar', sub), { recursive: true });
+  else console.warn('AVISO: pasta de avatar "' + sub + '" não encontrada no repositório (os avatares podem não aparecer).');
+}
 fs.writeFileSync(path.join(out, 'supabase-config.json'), JSON.stringify({ url, anonKey }));
 
 // Chave da YouTube Data API (opcional): melhora busca, playlists e detecção de lives.
