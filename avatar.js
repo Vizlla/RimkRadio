@@ -10,12 +10,36 @@
     const CATALOG = {"bases": [{"id": "rimk", "label": "Rimk"}, {"id": "sahrin", "label": "Sahrin"}, {"id": "vharn", "label": "Vharn"}, {"id": "thraak", "label": "Thraak"}, {"id": "ferrum", "label": "Ferrum"}, {"id": "nereids", "label": "Nereids"}], "cats": [{"id": "cabelo", "label": "Cabelo", "fa": "fa-scissors", "z": 50, "multi": false, "ctx": false, "items": [{"id": "julian", "label": "Julian", "bb": [37, 0, 460, 465]}, {"id": "moicano", "label": "Moicano", "bb": [200, 0, 325, 141]}, {"id": "azul", "label": "Azul", "bb": [48, 42, 450, 321]}, {"id": "feminino1", "label": "Longo preto", "bb": [35, 57, 396, 500]}, {"id": "feminino2", "label": "Vermelho", "bb": [13, 11, 423, 422]}]}, {"id": "chapeu", "label": "Chapéus", "fa": "fa-hat-cowboy", "z": 70, "multi": false, "ctx": false, "items": [{"id": "chef", "label": "Chef", "bb": [87, 16, 413, 195]}, {"id": "cowboy", "label": "Cowboy", "bb": [57, 2, 442, 216]}, {"id": "zezinho", "label": "Zezinho", "bb": [101, 50, 393, 246]}, {"id": "aluminio", "label": "Papel alumínio", "bb": [98, 5, 397, 232]}, {"id": "turbante", "label": "Turbante", "bb": [18, 20, 448, 448]}, {"id": "coroa", "label": "Coroa", "bb": [158, 16, 340, 139]}]}, {"id": "antena", "label": "Antenas", "fa": "fa-satellite-dish", "z": 80, "multi": false, "ctx": false, "items": [{"id": "verde", "label": "Verde", "bb": [164, 10, 333, 95]}, {"id": "azul", "label": "Azul", "bb": [164, 10, 333, 95]}, {"id": "amarela", "label": "Amarela", "bb": [164, 10, 333, 95]}, {"id": "vermelha", "label": "Vermelha", "bb": [164, 10, 333, 95]}, {"id": "branca", "label": "Branca", "bb": [164, 10, 333, 95]}, {"id": "roxa", "label": "Roxa", "bb": [164, 10, 333, 95]}]}, {"id": "olhos", "label": "Óculos e olhos", "fa": "fa-glasses", "z": 40, "multi": false, "ctx": true, "items": [{"id": "cilios", "label": "Cílios", "bb": [130, 143, 376, 233]}, {"id": "binoculo", "label": "Monóculo", "bb": [275, 224, 378, 500]}, {"id": "cool", "label": "Óculos cool", "bb": [124, 297, 377, 346]}, {"id": "scanner", "label": "Scanner", "bb": [271, 194, 431, 338]}, {"id": "tapaolho", "label": "Tapa-olho", "bb": [133, 139, 385, 347]}]}, {"id": "boca", "label": "Bocas", "fa": "fa-face-smile", "z": 20, "multi": false, "ctx": true, "items": [{"id": "slay", "label": "Slay", "bb": [188, 346, 300, 412]}, {"id": "dentuca", "label": "Dentuça", "bb": [189, 357, 298, 400]}, {"id": "linguinha", "label": "Linguinha", "bb": [200, 362, 292, 423]}, {"id": "sorrindo", "label": "Sorrindo", "bb": [200, 350, 300, 407]}]}, {"id": "bigode", "label": "Bigodes", "fa": "fa-grip-lines", "z": 25, "multi": false, "ctx": true, "items": [{"id": "rimk", "label": "Rimk", "bb": [141, 342, 353, 401]}, {"id": "sahrin", "label": "Sahrin", "bb": [125, 314, 368, 499]}, {"id": "ferrum", "label": "Ferrum", "bb": [148, 345, 348, 401]}, {"id": "nereids", "label": "Nereids", "bb": [123, 322, 373, 386]}]}, {"id": "roupa", "label": "Roupas", "fa": "fa-shirt", "z": 30, "multi": false, "ctx": false, "items": [{"id": "jaleco", "label": "Jaleco", "bb": [126, 429, 373, 500]}, {"id": "chef", "label": "Roupa de chef", "bb": [149, 420, 345, 500]}, {"id": "bandana", "label": "Bandana", "bb": [191, 429, 298, 500]}, {"id": "astronauta", "label": "Astronauta", "bb": [80, 89, 416, 500], "z": 90}, {"id": "rei", "label": "Traje de rei", "bb": [144, 400, 350, 500]}, {"id": "chocker", "label": "Choker", "bb": [208, 428, 288, 451]}]}, {"id": "marcas", "label": "Cicatrizes e marcas", "fa": "fa-skull", "z": 10, "multi": true, "ctx": true, "items": [{"id": "cicatriz1", "label": "Costura", "bb": [252, 171, 319, 262]}, {"id": "cicatriz2", "label": "Garras", "bb": [143, 314, 234, 388]}, {"id": "cicatriz3", "label": "Risco", "bb": [214, 181, 282, 241]}, {"id": "cicatriz4", "label": "Corte", "bb": [137, 225, 244, 336]}, {"id": "osso1", "label": "Rachadura 1", "bb": [113, 185, 246, 349]}, {"id": "osso2", "label": "Rachadura 2", "bb": [240, 105, 312, 250]}, {"id": "osso3", "label": "Rachadura 3", "bb": [214, 328, 367, 424]}]}, {"id": "fone", "label": "Fone", "fa": "fa-headphones", "z": 60, "multi": false, "ctx": false, "items": [{"id": "fone", "label": "Fone de ouvido", "bb": [10, 0, 490, 351]}]}], "bgs": [{"id": "rimkopolis", "label": "Rimkópolis"}, {"id": "ferrum", "label": "Ferrum"}, {"id": "kaal7", "label": "Kaal-7"}, {"id": "nereid", "label": "Nereids"}, {"id": "rei", "label": "Reino"}, {"id": "cowboy", "label": "Faroeste"}, {"id": "cozinha", "label": "Cozinha"}]};
     const DIR = 'avatar/';
 
+
     const baseIds = new Set(CATALOG.bases.map(b => b.id));
     const bgIds = new Set(CATALOG.bgs.map(b => b.id));
     const itemInfo = new Map();   // 'cabelo-julian' -> { cat, z, label }
     CATALOG.cats.forEach(c => c.items.forEach(it => itemInfo.set(c.id + '-' + it.id, { cat: c, z: it.z || c.z, label: it.label })));
 
+    /* ---------- REGRAS por raça ----------
+       Cada regra: quais raças (bases) ela vale e o que elas NÃO podem usar.
+         noCats  = categorias inteiras (ex.: bigode)
+         noItems = itens específicos (ex.: as 3 rachaduras), com 'what' = nome usado na mensagem
+       Para criar outra regra, é só adicionar um bloco aqui. */
+    const RULES = [
+        { bases: ['vharn', 'thraak'], noCats: ['bigode'] },
+        { bases: ['rimk', 'sahrin', 'ferrum', 'nereids'], noItems: ['marcas-osso1', 'marcas-osso2', 'marcas-osso3'], what: 'rachaduras' }
+    ];
+    const BASE_NAME = Object.fromEntries(CATALOG.bases.map(b => [b.id, b.label]));
+    const rulesFor = (base) => RULES.filter(r => r.bases.includes(base));
+    const blockedCat = (base, catId) => rulesFor(base).some(r => (r.noCats || []).includes(catId));
+    const blockedItem = (base, f) => { const inf = itemInfo.get(f); return !!inf && (blockedCat(base, inf.cat.id) || rulesFor(base).some(r => (r.noItems || []).includes(f))); };
+
+
     const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    // Texto do motivo: 'Vharn não pode usar bigodes.' / 'Rimk não pode usar rachaduras.'
+    function whyBlocked(base, f) {
+        const inf = itemInfo.get(f), nm = BASE_NAME[base] || '';
+        if (inf && blockedCat(base, inf.cat.id)) return `${nm} não pode usar ${inf.cat.label.toLowerCase()}.`;
+        const r = rulesFor(base).find(x => (x.noItems || []).includes(f));
+        return `${nm} não pode usar ${r ? r.what : 'este item'}.`;
+    }
 
     // Valida e normaliza uma receita (nunca confie no que chega pela rede).
     function clean(av) {
@@ -25,7 +49,7 @@
         const usedCats = new Set();
         (Array.isArray(av.i) ? av.i : []).forEach(f => {
             const inf = itemInfo.get(f);
-            if (!inf || out.i.includes(f)) return;
+            if (!inf || out.i.includes(f) || blockedItem(out.b, f)) return;   // regras da raça
             if (!inf.cat.multi && usedCats.has(inf.cat.id)) return;   // um item por categoria (marcas aceitam vários)
             usedCats.add(inf.cat.id); out.i.push(f);
         });
@@ -91,12 +115,15 @@
     const bgIcon = (id) => `<span class="av-ico av-ico-bg" style="background-image:url(${DIR}bg/${id}.jpg)"></span>`;
     const noneIcon = '<i class="fa-solid fa-ban av-none"></i>';
 
+    // Símbolo de "proibido" (círculo + risco) desenhado em SVG: não depende de fonte de ícones
+    const BAN = '<svg class="av-x" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle cx="24" cy="24" r="19" fill="rgba(0,0,0,.35)" stroke="#FF4D4D" stroke-width="5"/><path d="M10.6 37.4 37.4 10.6" stroke="#FF4D4D" stroke-width="5" stroke-linecap="round"/></svg>';
+
     function panelHTML() {
         const sec = (id, title, hint, inner) =>
-            `<section class="av-sec" data-sec="${id}"><h4 class="av-sec-t">${esc(title)}${hint ? `<small>${esc(hint)}</small>` : ''}</h4><div class="av-grid">${inner}</div></section>`;
+            `<section class="av-sec" data-sec="${id}"><h4 class="av-sec-t">${esc(title)}${hint ? `<small>${esc(hint)}</small>` : ''}</h4><p class="av-lock" hidden></p><div class="av-grid">${inner}</div></section>`;
         return sec('cor', 'Cor do alien', '', CATALOG.bases.map(b => opt('base', b.id, baseIcon(b.id), b.label)).join(''))
             + CATALOG.cats.map(c => sec(c.id, c.label, c.multi ? 'pode combinar vários' : '',
-                opt('none', c.id, noneIcon, 'Nenhum') + c.items.map(it => opt('item', c.id + '-' + it.id, itemIcon(c, it), it.label)).join(''))).join('')
+                opt('none', c.id, noneIcon, 'Nenhum') + c.items.map(it => opt('item', c.id + '-' + it.id, itemIcon(c, it), it.label, false, BAN)).join(''))).join('')
             + sec('fundo', 'Fundo', '', opt('bg', '', noneIcon, 'Sem fundo') + CATALOG.bgs.map(b => opt('bg', b.id, bgIcon(b.id), b.label)).join(''));
     }
 
@@ -160,6 +187,22 @@
     function sync() {
         if (!root || !st) return;
         const d = st.draft;
+        const baseLabel = BASE_NAME[d.b] || '';
+        root.querySelectorAll('.av-sec').forEach(sec => {
+            const cat = CATALOG.cats.find(c => c.id === sec.dataset.sec);
+            const lockCat = !!cat && blockedCat(d.b, cat.id);
+            const rule = cat && rulesFor(d.b).find(r => (r.noItems || []).some(f => f.startsWith(cat.id + '-')));
+            const msg = sec.querySelector('.av-lock'); msg.hidden = !(lockCat || rule);
+            if (lockCat) msg.textContent = `${baseLabel} não pode usar ${cat.label.toLowerCase()}.`;
+            else if (rule) msg.textContent = `${baseLabel} não pode usar ${rule.what}.`;
+            sec.querySelectorAll('.av-opt[data-act="item"]').forEach(b => {
+                const off = blockedItem(d.b, b.dataset.id);
+                b.classList.toggle('is-off', off);
+                if (off) { b.setAttribute('aria-disabled', 'true'); b.title = whyBlocked(d.b, b.dataset.id); }
+                else { b.removeAttribute('aria-disabled'); b.title = b.querySelector('span').textContent; }
+            });
+        });
+        root.querySelectorAll('.av-cat').forEach(b => b.classList.toggle('is-locked', blockedCat(d.b, b.dataset.id)));
         root.querySelector('#av-preview').innerHTML = html(d, 'av-lg');
         root.querySelectorAll('.av-opt').forEach(b => {
             const a = b.dataset.act, id = b.dataset.id; let on = false;
@@ -194,11 +237,21 @@
             if (ok) return close();
             setMsg('Não consegui salvar.'); return sync();
         }
-        else if (act === 'base') d.b = id;
+        else if (act === 'base') {
+            d.b = id;
+            const gone = d.i.filter(f => blockedItem(id, f));
+            if (gone.length) {
+                d.i = d.i.filter(f => !blockedItem(id, f));
+                const nomes = gone.map(f => { const inf = itemInfo.get(f); return `${inf.cat.label} (${inf.label})`; }).join(', ');
+                setMsg(`${BASE_NAME[id]} não pode usar, então tirei: ${nomes}.`);
+                return sync();
+            }
+        }
         else if (act === 'bg') d.bg = id || null;
         else if (act === 'none') d.i = d.i.filter(f => itemInfo.get(f).cat.id !== id);
         else if (act === 'item') {
             const c = itemInfo.get(id).cat;
+            if (blockedItem(d.b, id)) { setMsg(whyBlocked(d.b, id)); return; }
             if (d.i.includes(id)) d.i = d.i.filter(f => f !== id);
             else d.i = [...(c.multi ? d.i : d.i.filter(f => itemInfo.get(f).cat.id !== c.id)), id];
         }
@@ -207,8 +260,9 @@
             d.b = pick(CATALOG.bases).id;
             d.bg = Math.random() < .8 ? pick(CATALOG.bgs).id : null;
             d.i = [];
-            CATALOG.cats.forEach(c => { if (Math.random() < (c.multi ? .25 : .4)) d.i.push(c.id + '-' + pick(c.items).id); });
+            CATALOG.cats.forEach(c => { if (!blockedCat(d.b, c.id) && Math.random() < (c.multi ? .25 : .4)) d.i.push(c.id + '-' + pick(c.items).id); });
             d.i = d.i.filter(f => f !== 'roupa-astronauta' || Math.random() < .15);   // o capacete esconde tudo: raro
+            d.i = d.i.filter(f => !blockedItem(d.b, f));
         }
         setMsg(''); sync();
     }

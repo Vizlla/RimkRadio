@@ -746,6 +746,11 @@ body[data-cat] #room-view .play-btn { color: #050605; }
 .av-cat em { font-style: normal; font-size: .65rem; min-width: 1rem; padding: 0 .3rem; border-radius: 9999px; background: rgba(0, 0, 0, .35); color: #fff; text-align: center; }
 .av-cat.is-on em { background: rgba(0, 0, 0, .25); }
 .av-cat em[hidden] { display: none; }
+.av-cat.is-locked { opacity: .45; }
+.av-lock { margin: 0 0 .55rem; padding: .4rem .6rem; border-radius: 10px; font-size: .72rem; color: #FFD27A; background: rgba(255, 190, 60, .08); border: 1px solid rgba(255, 190, 60, .25); }
+.av-lock[hidden] { display: none; }
+.av-opt:disabled { cursor: not-allowed; }
+.av-opt:disabled:hover { transform: none; border-color: var(--edge); }
 .av-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.4rem, 1fr)); gap: .5rem; }
 .av-opt { display: flex; flex-direction: column; align-items: center; gap: .3rem; padding: .35rem .25rem .4rem; border-radius: 12px; border: 1.5px solid var(--edge); background: rgba(255, 255, 255, .03); color: #C3CBBE; font-size: .65rem; line-height: 1.1; text-align: center; transition: border-color .15s, background .15s, transform .15s; }
 .av-opt:hover { border-color: var(--blue); transform: translateY(-1px); }
@@ -754,6 +759,13 @@ body[data-cat] #room-view .play-btn { color: #050605; }
 .av-opt .av-none { width: 3.2rem; height: 3.2rem; border-radius: 10px; object-fit: cover; }
 .av-opt .av-none { display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: #6B7566; background: rgba(58, 68, 78, .6); }
 .av-opt span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.av-opt { position: relative; }
+.av-x { display: none; position: absolute; top: .35rem; left: 0; right: 0; margin: 0 auto; width: 3.2rem; height: 3.2rem; filter: drop-shadow(0 0 3px rgba(0, 0, 0, .8)); pointer-events: none; }
+.av-opt.is-off { cursor: not-allowed; }
+.av-opt.is-off .av-x { display: block; }
+.av-opt.is-off .av-ico { opacity: .35; filter: grayscale(1); }
+.av-opt.is-off > span:not(.av-ico) { opacity: .5; }
+.av-opt.is-off:hover { border-color: var(--edge); transform: none; }
 .av-opt.is-sel { border-color: var(--blue); background: rgba(153, 255, 0, .14); color: #fff; box-shadow: 0 0 14px rgba(153, 255, 0, .25); }
 .av-foot { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .9rem; }
 .av-msg { font-size: .75rem; color: #8E9A88; flex: 1; text-align: center; }
