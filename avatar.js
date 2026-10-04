@@ -23,7 +23,7 @@
        Para criar outra regra, é só adicionar um bloco aqui. */
     const RULES = [
         { bases: ['vharn', 'thraak'], noCats: ['bigode'] },
-        { bases: ['rimk', 'sahrin', 'ferrum', 'nereids'], noItems: ['marcas-osso1', 'marcas-osso2', 'marcas-osso3'], what: 'rachaduras' }
+        { bases: ['rimk', 'sahrin', 'ferrum', 'nereids', 'vharn'], noItems: ['marcas-osso1', 'marcas-osso2', 'marcas-osso3'], what: 'rachaduras' }
     ];
     const BASE_NAME = Object.fromEntries(CATALOG.bases.map(b => [b.id, b.label]));
     const rulesFor = (base) => RULES.filter(r => r.bases.includes(base));
