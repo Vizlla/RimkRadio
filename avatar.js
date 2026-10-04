@@ -33,14 +33,6 @@
 
     const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-    // Texto do motivo: 'Vharn não pode usar bigodes.' / 'Rimk não pode usar rachaduras.'
-    function whyBlocked(base, f) {
-        const inf = itemInfo.get(f), nm = BASE_NAME[base] || '';
-        if (inf && blockedCat(base, inf.cat.id)) return `${nm} não pode usar ${inf.cat.label.toLowerCase()}.`;
-        const r = rulesFor(base).find(x => (x.noItems || []).includes(f));
-        return `${nm} não pode usar ${r ? r.what : 'este item'}.`;
-    }
-
     // Valida e normaliza uma receita (nunca confie no que chega pela rede).
     function clean(av) {
         if (!av || typeof av !== 'object') return null;
@@ -115,15 +107,12 @@
     const bgIcon = (id) => `<span class="av-ico av-ico-bg" style="background-image:url(${DIR}bg/${id}.jpg)"></span>`;
     const noneIcon = '<i class="fa-solid fa-ban av-none"></i>';
 
-    // Símbolo de "proibido" (círculo + risco) desenhado em SVG: não depende de fonte de ícones
-    const BAN = '<svg class="av-x" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle cx="24" cy="24" r="19" fill="rgba(0,0,0,.35)" stroke="#FF4D4D" stroke-width="5"/><path d="M10.6 37.4 37.4 10.6" stroke="#FF4D4D" stroke-width="5" stroke-linecap="round"/></svg>';
-
     function panelHTML() {
         const sec = (id, title, hint, inner) =>
             `<section class="av-sec" data-sec="${id}"><h4 class="av-sec-t">${esc(title)}${hint ? `<small>${esc(hint)}</small>` : ''}</h4><p class="av-lock" hidden></p><div class="av-grid">${inner}</div></section>`;
         return sec('cor', 'Cor do alien', '', CATALOG.bases.map(b => opt('base', b.id, baseIcon(b.id), b.label)).join(''))
             + CATALOG.cats.map(c => sec(c.id, c.label, c.multi ? 'pode combinar vários' : '',
-                opt('none', c.id, noneIcon, 'Nenhum') + c.items.map(it => opt('item', c.id + '-' + it.id, itemIcon(c, it), it.label, false, BAN)).join(''))).join('')
+                opt('none', c.id, noneIcon, 'Nenhum') + c.items.map(it => opt('item', c.id + '-' + it.id, itemIcon(c, it), it.label)).join(''))).join('')
             + sec('fundo', 'Fundo', '', opt('bg', '', noneIcon, 'Sem fundo') + CATALOG.bgs.map(b => opt('bg', b.id, bgIcon(b.id), b.label)).join(''));
     }
 
@@ -192,14 +181,13 @@
             const cat = CATALOG.cats.find(c => c.id === sec.dataset.sec);
             const lockCat = !!cat && blockedCat(d.b, cat.id);
             const rule = cat && rulesFor(d.b).find(r => (r.noItems || []).some(f => f.startsWith(cat.id + '-')));
+            sec.classList.toggle('is-locked', lockCat);
             const msg = sec.querySelector('.av-lock'); msg.hidden = !(lockCat || rule);
             if (lockCat) msg.textContent = `${baseLabel} não pode usar ${cat.label.toLowerCase()}.`;
             else if (rule) msg.textContent = `${baseLabel} não pode usar ${rule.what}.`;
-            sec.querySelectorAll('.av-opt[data-act="item"]').forEach(b => {
-                const off = blockedItem(d.b, b.dataset.id);
-                b.classList.toggle('is-off', off);
-                if (off) { b.setAttribute('aria-disabled', 'true'); b.title = whyBlocked(d.b, b.dataset.id); }
-                else { b.removeAttribute('aria-disabled'); b.title = b.querySelector('span').textContent; }
+            sec.querySelectorAll('.av-opt').forEach(b => {
+                const off = !!cat && (lockCat || (b.dataset.act === 'item' && blockedItem(d.b, b.dataset.id)));
+                b.disabled = off; b.classList.toggle('is-off', off && !lockCat);
             });
         });
         root.querySelectorAll('.av-cat').forEach(b => b.classList.toggle('is-locked', blockedCat(d.b, b.dataset.id)));
@@ -251,7 +239,7 @@
         else if (act === 'none') d.i = d.i.filter(f => itemInfo.get(f).cat.id !== id);
         else if (act === 'item') {
             const c = itemInfo.get(id).cat;
-            if (blockedItem(d.b, id)) { setMsg(whyBlocked(d.b, id)); return; }
+            if (blockedItem(d.b, id)) return;
             if (d.i.includes(id)) d.i = d.i.filter(f => f !== id);
             else d.i = [...(c.multi ? d.i : d.i.filter(f => itemInfo.get(f).cat.id !== c.id)), id];
         }
