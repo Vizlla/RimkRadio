@@ -718,7 +718,7 @@ body[data-cat] #room-view .play-btn { color: #050605; }
 @media (max-height: 860px) { .setup-create .eq { display: none; } }
 
 /* ============================================================
-   AVATARES (avatar.js): camadas empilhadas + editor em 3 passos
+   AVATARES (avatar.js): camadas empilhadas + editor numa tela só
    ============================================================ */
 .av { position: relative; display: block; width: 100%; height: 100%; overflow: hidden; border-radius: 9999px; background: rgba(2, 4, 2, 0.7); }
 .av img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; user-select: none; -webkit-user-drag: none; }
@@ -729,27 +729,23 @@ body[data-cat] #room-view .play-btn { color: #050605; }
 
 .av-backdrop { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(0, 0, 0, .72); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .2s, visibility 0s .2s; overflow-y: auto; }
 .av-backdrop.open { opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s; }
-.av-card { width: min(46rem, 100%); max-height: calc(100dvh - 2rem); display: flex; flex-direction: column; padding: 1.1rem 1.2rem; }
+.av-card { width: min(52rem, 100%); height: min(42rem, calc(100dvh - 2rem)); display: flex; flex-direction: column; padding: 1.1rem 1.2rem; }
 .av-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .8rem; }
 .av-body { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 1.1rem; min-height: 0; flex: 1; overflow: hidden; }
 .av-side { display: flex; flex-direction: column; align-items: center; gap: .7rem; }
 .av-preview { width: 13rem; height: 13rem; border-radius: 18px; border: 1px solid var(--edge); box-shadow: 0 0 28px rgba(153, 255, 0, .12); overflow: hidden; }
 .av-lg, .av-preview .av { border-radius: 18px; }
 .av-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-.av-steps { display: flex; gap: .4rem; margin-bottom: .7rem; }
-.av-step { flex: 1; display: flex; align-items: center; justify-content: center; gap: .4rem; padding: .5rem .4rem; border-radius: 12px; border: 1px solid var(--edge); background: rgba(255, 255, 255, .04); color: #8E9A88; font-size: .8rem; font-weight: 600; transition: color .2s, border-color .2s, background .2s; }
-.av-step b { width: 1.2rem; height: 1.2rem; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; font-size: .7rem; background: rgba(255, 255, 255, .08); }
-.av-step i { display: none; }
-.av-step.is-done { color: #CCFF66; }
-.av-step.is-on { color: #fff; border-color: var(--blue); background: rgba(153, 255, 0, .12); }
-.av-step.is-on b { background: var(--blue); color: #0A0A0A; }
-.av-panel { overflow-y: auto; min-height: 0; padding: .1rem .15rem .4rem; }
-.av-hint { font-size: .75rem; color: #8E9A88; margin: 0 0 .5rem; }
-.av-cats { display: flex; gap: .35rem; overflow-x: auto; padding-bottom: .5rem; margin-bottom: .2rem; }
+.av-panel { position: relative; flex: 1; overflow-y: auto; min-height: 0; padding: .1rem .35rem .6rem .15rem; overscroll-behavior: contain; }
+.av-sec + .av-sec { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, .06); }
+.av-sec-t { display: flex; align-items: baseline; gap: .5rem; margin: 0 0 .55rem; font-size: .8rem; font-weight: 700; color: #fff; letter-spacing: .02em; }
+.av-sec-t small { font-size: .68rem; font-weight: 400; color: #8E9A88; }
+.av-cats { display: flex; flex-shrink: 0; gap: .35rem; overflow-x: auto; padding-bottom: .55rem; margin-bottom: .45rem; scrollbar-width: thin; }
 .av-cat { position: relative; flex-shrink: 0; display: flex; align-items: center; gap: .4rem; padding: .4rem .65rem; border-radius: 9999px; border: 1px solid var(--edge); background: rgba(255, 255, 255, .04); color: #C3CBBE; font-size: .75rem; font-weight: 600; white-space: nowrap; }
 .av-cat.is-on { color: #0A0A0A; background: var(--blue); border-color: var(--blue); }
 .av-cat em { font-style: normal; font-size: .65rem; min-width: 1rem; padding: 0 .3rem; border-radius: 9999px; background: rgba(0, 0, 0, .35); color: #fff; text-align: center; }
 .av-cat.is-on em { background: rgba(0, 0, 0, .25); }
+.av-cat em[hidden] { display: none; }
 .av-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.4rem, 1fr)); gap: .5rem; }
 .av-opt { display: flex; flex-direction: column; align-items: center; gap: .3rem; padding: .35rem .25rem .4rem; border-radius: 12px; border: 1.5px solid var(--edge); background: rgba(255, 255, 255, .03); color: #C3CBBE; font-size: .65rem; line-height: 1.1; text-align: center; transition: border-color .15s, background .15s, transform .15s; }
 .av-opt:hover { border-color: var(--blue); transform: translateY(-1px); }
@@ -762,8 +758,15 @@ body[data-cat] #room-view .play-btn { color: #050605; }
 .av-foot { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .9rem; }
 .av-msg { font-size: .75rem; color: #8E9A88; flex: 1; text-align: center; }
 @media (max-width: 640px) {
-    .av-body { grid-template-columns: 1fr; overflow-y: auto; }
-    .av-side { flex-direction: row; justify-content: center; }
-    .av-preview { width: 8.5rem; height: 8.5rem; }
-    .av-step span { display: none; } .av-step i { display: inline; }
+    .av-card { height: calc(100dvh - 2rem); }
+    .av-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); gap: .7rem; }
+    .av-side { flex-direction: row; justify-content: center; gap: 1rem; }
+    .av-preview { width: 7rem; height: 7rem; }
 }
+
+/* Ícone do perfil no topo: abre o editor de avatar */
+.chip-profile { display: inline-flex; align-items: center; gap: .5rem; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; border-radius: 9999px; }
+.chip-profile .chip-av { transition: border-color .15s, box-shadow .15s; }
+.chip-profile:hover .chip-av { border-color: var(--blue); box-shadow: 0 0 10px rgba(153, 255, 0, .35); }
+.chip-profile:hover #user-chip-name { color: #CCFF66; }
+.chip-profile:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }

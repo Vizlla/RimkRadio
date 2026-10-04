@@ -61,10 +61,9 @@
         </div>
 
         <div id="user-chip" class="hidden items-center gap-2 chip">
-            <span id="user-chip-av" class="chip-av hidden"></span><i id="user-chip-icon" class="fa-solid fa-user text-xs text-nblue"></i>
-            <strong id="user-chip-name" class="text-white font-semibold"></strong>
-            <button onclick="openAvatarEditor()" class="text-[#8E9A88] hover:text-nyellow ml-1 transition" title="Criar ou editar seu avatar" aria-label="Criar ou editar seu avatar">
-                <i class="fa-solid fa-user-astronaut"></i>
+            <button type="button" onclick="openAvatarEditor()" class="chip-profile" title="Personalizar seu avatar" aria-label="Abrir o seu perfil para personalizar o avatar">
+                <span id="user-chip-av" class="chip-av hidden"></span><i id="user-chip-icon" class="fa-solid fa-user text-xs text-nblue"></i>
+                <strong id="user-chip-name" class="text-white font-semibold"></strong>
             </button>
             <button onclick="logout()" class="text-[#8E9A88] hover:text-nyellow ml-1 transition" title="Sair da conta" aria-label="Sair da conta">
                 <i class="fa-solid fa-right-from-bracket"></i>
