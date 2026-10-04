@@ -335,11 +335,12 @@
             }
             return { playlist };
         },
-        // Limpar fila: mantém até a música atual (a última tocada) e apaga todas as que vêm depois
+        // Limpar fila: apaga as músicas que já tocaram (antes da atual) e mantém a atual e as próximas
         clearQueue(room) {
             const list = room.playlist || [];
             const cur = room.currentIndex || 0;
-            if (cur <= 0 || cur >= list,length) return null;
+            if (cur <= 0 || cur >= list.length) return null;
+            // a atual passa a ser a primeira da lista; ela segue tocando, sem reiniciar
             return { playlist: list.slice(cur), currentIndex: 0 };
         }
     };
@@ -2235,22 +2236,22 @@
         catch (e) { console.error(e); }
     };
 
-    // Botão "Limpar fila": só o anfitrião. Apaga as músicas depois da atual e avisa no chat uma única vez.
-    const queueLeft = () => Math.max(0, Math.min((lastRoom.currentIndex || 0) (lastRoom.playlist || []).length));
+    // Botão "Limpar fila": só o anfitrião. Apaga as músicas que já tocaram (antes da atual) e avisa no chat uma única vez.
+    const queueLeft = () => Math.max(0, Math.min((lastRoom.currentIndex || 0), (lastRoom.playlist || []).length));
     function updateClearBtn() {
         const b = $('clear-queue-btn'); if (!b) return;
         const mayClear = !hostMode() || store.isHost();
         const n = queueLeft();
         b.classList.toggle('hidden', !mayClear || !currentRoomId);
         b.disabled = n === 0;
-        b.title = n ? `Limpar as músicas que já tocaram (${n} ${n === 1 ? 'música' : 'músicas'})` : 'Não há músicas depois da atual';
+        b.title = n ? `Limpar as músicas que já tocaram (${n} ${n === 1 ? 'música' : 'músicas'})` : 'Não há músicas que já tocaram';
     }
     window.clearPlaylist = async function () {
         if (!currentRoomId || (hostMode() && !store.isHost())) return showNotification('Só o anfitrião pode limpar a playlist.', 'error');
         const n = queueLeft(); if (!n) return;
         const yes = await askConfirm({
             title: 'Limpar a playlist?',
-            message: `${n === 1 ? '1 música antes da atual será removida' : n + ' músicas antes da atual serão removidas'}. A música que está tocando e as próximos ficam.`,
+            message: `${n === 1 ? '1 música antes da atual será removida' : n + ' músicas antes da atual serão removidas'}. A música que está tocando e as próximas ficam.`,
             okText: 'Limpar', danger: true, icon: 'fa-broom'
         });
         if (!yes || !currentRoomId) return;
