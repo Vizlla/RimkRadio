@@ -27,7 +27,7 @@ for (const f of ['index.html', 'script.js', 'avatar.js', 'radio.js', 'styles.css
 }
 // Avatares: PNGs das camadas (alien, acessórios, fundos e ícones)
 // Avatares: aceita as pastas dentro de avatar/ OU soltas na raiz do repositório (base, item, icon, bg)
-for (const sub of ['base', 'item', 'icon', 'bg']) {
+for (const sub of ['base', 'item', 'bg']) {
   const src = [path.join(__dirname, 'avatar', sub), path.join(__dirname, sub)].find((p) => fs.existsSync(p) && fs.statSync(p).isDirectory());
   if (src) fs.cpSync(src, path.join(out, 'avatar', sub), { recursive: true });
   else console.warn('AVISO: pasta de avatar "' + sub + '" não encontrada no repositório (os avatares podem não aparecer).');

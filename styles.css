@@ -100,6 +100,8 @@ body {
     color: #C3CBBE;
     transition: color .2s, border-color .2s, background .2s;
 }
+#clear-queue-btn:disabled { opacity: .35; cursor: not-allowed; }
+#clear-queue-btn:disabled:hover { color: #C3CBBE; border-color: var(--edge); background: rgba(255, 255, 255, 0.05); }
 .icon-btn:hover { color: var(--blue); border-color: var(--blue); background: rgba(153, 255, 0, 0.1); }
 
 .play-btn {
@@ -751,7 +753,9 @@ body[data-cat] #room-view .play-btn { color: #050605; }
 .av-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.4rem, 1fr)); gap: .5rem; }
 .av-opt { display: flex; flex-direction: column; align-items: center; gap: .3rem; padding: .35rem .25rem .4rem; border-radius: 12px; border: 1.5px solid var(--edge); background: rgba(255, 255, 255, .03); color: #C3CBBE; font-size: .65rem; line-height: 1.1; text-align: center; transition: border-color .15s, background .15s, transform .15s; }
 .av-opt:hover { border-color: var(--blue); transform: translateY(-1px); }
-.av-opt img, .av-opt .av-none { width: 3.2rem; height: 3.2rem; border-radius: 10px; object-fit: cover; }
+.av-ico { display: block; width: 3.2rem; height: 3.2rem; border-radius: 10px; background-repeat: no-repeat; background-color: #3a444e; }
+.av-ico-bg { background-size: cover; background-position: center; }
+.av-opt .av-none { width: 3.2rem; height: 3.2rem; border-radius: 10px; object-fit: cover; }
 .av-opt .av-none { display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: #6B7566; background: rgba(58, 68, 78, .6); }
 .av-opt span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .av-opt.is-sel { border-color: var(--blue); background: rgba(153, 255, 0, .14); color: #fff; box-shadow: 0 0 14px rgba(153, 255, 0, .25); }

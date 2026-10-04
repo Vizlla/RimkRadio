@@ -334,6 +334,13 @@
                 return { playlist, currentIndex, currentTime: 0, playbackUpdated: Date.now() };
             }
             return { playlist };
+        },
+        // Limpar fila: mantém até a música atual (a última tocada) e apaga todas as que vêm depois
+        clearQueue(room) {
+            const list = room.playlist || [];
+            const cur = room.currentIndex || 0;
+            if (list.length <= cur + 1) return null;
+            return { playlist: list.slice(0, cur + 1) };
         }
     };
 
@@ -360,6 +367,7 @@
             const gone = (prev.playlist || [])[a.idx];
             return gone ? `${who} removeu ${nm(gone)} da playlist` : null;
         }
+        if (op === 'clearQueue') return `${who} limpou a playlist`;
         if (op === 'addMany') {
             const n = (next.playlist || []).length - (prev.playlist || []).length;
             if (n <= 0) return null;
@@ -718,6 +726,7 @@
         store.updateRoom = async (id, op, args) => {
             const fn = getOp(op);
             if (!fn) return;
+            if (op === 'clearQueue' && !store.isHost()) return;   // só o anfitrião limpa a playlist
             try {
                 if (op === 'lock') {
                     const { data, error } = await sb.from('rooms').update({ locked: !!(args && args.value) }).eq('id', id).select('*').maybeSingle();
@@ -2226,6 +2235,29 @@
         catch (e) { console.error(e); }
     };
 
+    // Botão "Limpar fila": só o anfitrião. Apaga as músicas depois da atual e avisa no chat uma única vez.
+    const queueLeft = () => Math.max(0, (lastRoom.playlist || []).length - ((lastRoom.currentIndex || 0) + 1));
+    function updateClearBtn() {
+        const b = $('clear-queue-btn'); if (!b) return;
+        const mayClear = !hostMode() || store.isHost();
+        const n = queueLeft();
+        b.classList.toggle('hidden', !mayClear || !currentRoomId);
+        b.disabled = n === 0;
+        b.title = n ? `Limpar a playlist a partir da música atual (${n} ${n === 1 ? 'música' : 'músicas'})` : 'Não há músicas depois da atual';
+    }
+    window.clearPlaylist = async function () {
+        if (!currentRoomId || (hostMode() && !store.isHost())) return showNotification('Só o anfitrião pode limpar a playlist.', 'error');
+        const n = queueLeft(); if (!n) return;
+        const yes = await askConfirm({
+            title: 'Limpar a playlist?',
+            message: `${n === 1 ? '1 música depois da atual será removida' : n + ' músicas depois da atual serão removidas'}. A música que está tocando e as anteriores ficam.`,
+            okText: 'Limpar', danger: true, icon: 'fa-broom'
+        });
+        if (!yes || !currentRoomId) return;
+        try { await act('clearQueue', {}); }
+        catch (e) { console.error(e); }
+    };
+
     window.removeSong = async function (idx) {
         if (!currentRoomId || !canControl()) return;
         try { await act('remove', { idx }); }
@@ -2239,6 +2271,7 @@
         const container = $('playlist-container');
         const placeholder = $('player-placeholder');
 
+        updateClearBtn();
         if (!playlist.length) {
             container.innerHTML = '<div class="text-center py-6 text-gray-500 text-xs font-mono">Nenhuma faixa na fila.</div>';
             placeholder.classList.remove('hidden');

@@ -7,7 +7,7 @@
    ============================================================ */
 (function () {
     'use strict';
-    const CATALOG = {"bases": [{"id": "rimk", "label": "Rimk"}, {"id": "sahrin", "label": "Sahrin"}, {"id": "vharn", "label": "Vharn"}, {"id": "thraak", "label": "Thraak"}, {"id": "ferrum", "label": "Ferrum"}, {"id": "nereids", "label": "Nereids"}], "cats": [{"id": "cabelo", "label": "Cabelo", "fa": "fa-scissors", "z": 50, "multi": false, "items": [{"id": "julian", "label": "Julian"}, {"id": "moicano", "label": "Moicano"}, {"id": "azul", "label": "Azul"}, {"id": "feminino1", "label": "Longo preto"}, {"id": "feminino2", "label": "Vermelho"}]}, {"id": "chapeu", "label": "Chapéus", "fa": "fa-hat-cowboy", "z": 70, "multi": false, "items": [{"id": "chef", "label": "Chef"}, {"id": "cowboy", "label": "Cowboy"}, {"id": "zezinho", "label": "Zezinho"}, {"id": "aluminio", "label": "Papel alumínio"}, {"id": "turbante", "label": "Turbante"}, {"id": "coroa", "label": "Coroa"}]}, {"id": "antena", "label": "Antenas", "fa": "fa-satellite-dish", "z": 80, "multi": false, "items": [{"id": "verde", "label": "Verde"}, {"id": "azul", "label": "Azul"}, {"id": "amarela", "label": "Amarela"}, {"id": "vermelha", "label": "Vermelha"}, {"id": "branca", "label": "Branca"}, {"id": "roxa", "label": "Roxa"}]}, {"id": "olhos", "label": "Óculos e olhos", "fa": "fa-glasses", "z": 40, "multi": false, "items": [{"id": "cilios", "label": "Cílios"}, {"id": "binoculo", "label": "Monóculo"}, {"id": "cool", "label": "Óculos cool"}, {"id": "scanner", "label": "Scanner"}, {"id": "tapaolho", "label": "Tapa-olho"}]}, {"id": "boca", "label": "Bocas", "fa": "fa-face-smile", "z": 20, "multi": false, "items": [{"id": "slay", "label": "Slay"}, {"id": "dentuca", "label": "Dentuça"}, {"id": "linguinha", "label": "Linguinha"}, {"id": "sorrindo", "label": "Sorrindo"}]}, {"id": "bigode", "label": "Bigodes", "fa": "fa-grip-lines", "z": 25, "multi": false, "items": [{"id": "rimk", "label": "Rimk"}, {"id": "sahrin", "label": "Sahrin"}, {"id": "ferrum", "label": "Ferrum"}, {"id": "nereids", "label": "Nereids"}]}, {"id": "roupa", "label": "Roupas", "fa": "fa-shirt", "z": 30, "multi": false, "items": [{"id": "jaleco", "label": "Jaleco"}, {"id": "chef", "label": "Roupa de chef"}, {"id": "bandana", "label": "Bandana"}, {"id": "astronauta", "label": "Astronauta", "z": 90}, {"id": "rei", "label": "Traje de rei"}, {"id": "chocker", "label": "Choker"}]}, {"id": "marcas", "label": "Cicatrizes e marcas", "fa": "fa-skull", "z": 10, "multi": true, "items": [{"id": "cicatriz1", "label": "Costura"}, {"id": "cicatriz2", "label": "Garras"}, {"id": "cicatriz3", "label": "Risco"}, {"id": "cicatriz4", "label": "Corte"}, {"id": "osso1", "label": "Rachadura 1"}, {"id": "osso2", "label": "Rachadura 2"}, {"id": "osso3", "label": "Rachadura 3"}]}, {"id": "fone", "label": "Fone", "fa": "fa-headphones", "z": 60, "multi": false, "items": [{"id": "fone", "label": "Fone de ouvido"}]}], "bgs": [{"id": "rimkopolis", "label": "Rimkópolis"}, {"id": "ferrum", "label": "Ferrum"}, {"id": "kaal7", "label": "Kaal-7"}, {"id": "nereid", "label": "Nereids"}, {"id": "rei", "label": "Reino"}, {"id": "cowboy", "label": "Faroeste"}, {"id": "cozinha", "label": "Cozinha"}]};
+    const CATALOG = {"bases": [{"id": "rimk", "label": "Rimk"}, {"id": "sahrin", "label": "Sahrin"}, {"id": "vharn", "label": "Vharn"}, {"id": "thraak", "label": "Thraak"}, {"id": "ferrum", "label": "Ferrum"}, {"id": "nereids", "label": "Nereids"}], "cats": [{"id": "cabelo", "label": "Cabelo", "fa": "fa-scissors", "z": 50, "multi": false, "ctx": false, "items": [{"id": "julian", "label": "Julian", "bb": [37, 0, 460, 465]}, {"id": "moicano", "label": "Moicano", "bb": [200, 0, 325, 141]}, {"id": "azul", "label": "Azul", "bb": [48, 42, 450, 321]}, {"id": "feminino1", "label": "Longo preto", "bb": [35, 57, 396, 500]}, {"id": "feminino2", "label": "Vermelho", "bb": [13, 11, 423, 422]}]}, {"id": "chapeu", "label": "Chapéus", "fa": "fa-hat-cowboy", "z": 70, "multi": false, "ctx": false, "items": [{"id": "chef", "label": "Chef", "bb": [87, 16, 413, 195]}, {"id": "cowboy", "label": "Cowboy", "bb": [57, 2, 442, 216]}, {"id": "zezinho", "label": "Zezinho", "bb": [101, 50, 393, 246]}, {"id": "aluminio", "label": "Papel alumínio", "bb": [98, 5, 397, 232]}, {"id": "turbante", "label": "Turbante", "bb": [18, 20, 448, 448]}, {"id": "coroa", "label": "Coroa", "bb": [158, 16, 340, 139]}]}, {"id": "antena", "label": "Antenas", "fa": "fa-satellite-dish", "z": 80, "multi": false, "ctx": false, "items": [{"id": "verde", "label": "Verde", "bb": [164, 10, 333, 95]}, {"id": "azul", "label": "Azul", "bb": [164, 10, 333, 95]}, {"id": "amarela", "label": "Amarela", "bb": [164, 10, 333, 95]}, {"id": "vermelha", "label": "Vermelha", "bb": [164, 10, 333, 95]}, {"id": "branca", "label": "Branca", "bb": [164, 10, 333, 95]}, {"id": "roxa", "label": "Roxa", "bb": [164, 10, 333, 95]}]}, {"id": "olhos", "label": "Óculos e olhos", "fa": "fa-glasses", "z": 40, "multi": false, "ctx": true, "items": [{"id": "cilios", "label": "Cílios", "bb": [130, 143, 376, 233]}, {"id": "binoculo", "label": "Monóculo", "bb": [275, 224, 378, 500]}, {"id": "cool", "label": "Óculos cool", "bb": [124, 297, 377, 346]}, {"id": "scanner", "label": "Scanner", "bb": [271, 194, 431, 338]}, {"id": "tapaolho", "label": "Tapa-olho", "bb": [133, 139, 385, 347]}]}, {"id": "boca", "label": "Bocas", "fa": "fa-face-smile", "z": 20, "multi": false, "ctx": true, "items": [{"id": "slay", "label": "Slay", "bb": [188, 346, 300, 412]}, {"id": "dentuca", "label": "Dentuça", "bb": [189, 357, 298, 400]}, {"id": "linguinha", "label": "Linguinha", "bb": [200, 362, 292, 423]}, {"id": "sorrindo", "label": "Sorrindo", "bb": [200, 350, 300, 407]}]}, {"id": "bigode", "label": "Bigodes", "fa": "fa-grip-lines", "z": 25, "multi": false, "ctx": true, "items": [{"id": "rimk", "label": "Rimk", "bb": [141, 342, 353, 401]}, {"id": "sahrin", "label": "Sahrin", "bb": [125, 314, 368, 499]}, {"id": "ferrum", "label": "Ferrum", "bb": [148, 345, 348, 401]}, {"id": "nereids", "label": "Nereids", "bb": [123, 322, 373, 386]}]}, {"id": "roupa", "label": "Roupas", "fa": "fa-shirt", "z": 30, "multi": false, "ctx": false, "items": [{"id": "jaleco", "label": "Jaleco", "bb": [126, 429, 373, 500]}, {"id": "chef", "label": "Roupa de chef", "bb": [149, 420, 345, 500]}, {"id": "bandana", "label": "Bandana", "bb": [191, 429, 298, 500]}, {"id": "astronauta", "label": "Astronauta", "bb": [80, 89, 416, 500], "z": 90}, {"id": "rei", "label": "Traje de rei", "bb": [144, 400, 350, 500]}, {"id": "chocker", "label": "Choker", "bb": [208, 428, 288, 451]}]}, {"id": "marcas", "label": "Cicatrizes e marcas", "fa": "fa-skull", "z": 10, "multi": true, "ctx": true, "items": [{"id": "cicatriz1", "label": "Costura", "bb": [252, 171, 319, 262]}, {"id": "cicatriz2", "label": "Garras", "bb": [143, 314, 234, 388]}, {"id": "cicatriz3", "label": "Risco", "bb": [214, 181, 282, 241]}, {"id": "cicatriz4", "label": "Corte", "bb": [137, 225, 244, 336]}, {"id": "osso1", "label": "Rachadura 1", "bb": [113, 185, 246, 349]}, {"id": "osso2", "label": "Rachadura 2", "bb": [240, 105, 312, 250]}, {"id": "osso3", "label": "Rachadura 3", "bb": [214, 328, 367, 424]}]}, {"id": "fone", "label": "Fone", "fa": "fa-headphones", "z": 60, "multi": false, "ctx": false, "items": [{"id": "fone", "label": "Fone de ouvido", "bb": [10, 0, 490, 351]}]}], "bgs": [{"id": "rimkopolis", "label": "Rimkópolis"}, {"id": "ferrum", "label": "Ferrum"}, {"id": "kaal7", "label": "Kaal-7"}, {"id": "nereid", "label": "Nereids"}, {"id": "rei", "label": "Reino"}, {"id": "cowboy", "label": "Faroeste"}, {"id": "cozinha", "label": "Cozinha"}]};
     const DIR = 'avatar/';
 
     const baseIds = new Set(CATALOG.bases.map(b => b.id));
@@ -101,7 +101,22 @@
     function opt(act, id, icon, label, sel, extra) {
         return `<button type="button" class="av-opt${sel ? ' is-sel' : ''}" data-act="${act}" data-id="${esc(id)}" title="${esc(label)}" aria-pressed="${!!sel}">${icon}<span>${esc(label)}</span>${extra || ''}</button>`;
     }
-    const iconImg = (f) => `<img src="${DIR}icon/${f}" alt="" width="96" height="96" loading="lazy" draggable="false">`;
+    // Ícones recortados por CSS a partir das próprias imagens (sem arquivos de ícone separados)
+    const ico = (bgImgs, size, pos) => `<span class="av-ico" style="background-image:${bgImgs};background-size:${size};background-position:${pos}"></span>`;
+    function cropStyle(bb) {   // enquadra o item (com folga) dentro do quadradinho
+        const w = bb[2] - bb[0], h = bb[3] - bb[1];
+        const side = Math.min(500, Math.max(Math.max(w, h) * 1.25, 110));
+        if (side >= 499) return ['100%', '0% 0%'];
+        const left = (bb[0] + bb[2]) / 2 - side / 2, top = (bb[1] + bb[3]) / 2 - side / 2;
+        return [(500 / side * 100).toFixed(2) + '%', (left / (500 - side) * 100).toFixed(2) + '% ' + (top / (500 - side) * 100).toFixed(2) + '%'];
+    }
+    const itemIcon = (cat, it) => {
+        const [size, pos] = cropStyle(it.bb);
+        const url = `url(${DIR}item/${cat.id}-${it.id}.png)`;
+        return ico(cat.ctx ? `${url},url(${DIR}base/rimk.png)` : url, cat.ctx ? `${size},${size}` : size, cat.ctx ? `${pos},${pos}` : pos);
+    };
+    const baseIcon = (id) => ico(`url(${DIR}base/${id}.png)`, '131.58%', '50% 50%');
+    const bgIcon = (id) => `<span class="av-ico av-ico-bg" style="background-image:url(${DIR}bg/${id}.jpg)"></span>`;
     const noneIcon = '<i class="fa-solid fa-ban av-none"></i>';
 
     function draw() {
@@ -113,7 +128,7 @@
         let p = '';
         if (st.step === 0) {
             p = `<p class="av-hint">Escolha a cor do seu alien.</p><div class="av-grid">${
-                CATALOG.bases.map(b => opt('base', b.id, iconImg('base-' + b.id + '.png'), b.label, d.b === b.id)).join('')}</div>`;
+                CATALOG.bases.map(b => opt('base', b.id, baseIcon(b.id), b.label, d.b === b.id)).join('')}</div>`;
         } else if (st.step === 1) {
             const cats = CATALOG.cats;
             p = `<div class="av-cats" role="tablist">${cats.map(c => {
@@ -123,12 +138,12 @@
             const c = cats.find(x => x.id === st.cat) || cats[0];
             const none = !d.i.some(f => itemInfo.get(f).cat.id === c.id);
             p += `<div class="av-grid">${opt('none', c.id, noneIcon, 'Nenhum', none)}${
-                c.items.map(it => { const f = c.id + '-' + it.id; return opt('item', f, iconImg(f + '.png'), it.label, d.i.includes(f)); }).join('')}</div>`
+                c.items.map(it => { const f = c.id + '-' + it.id; return opt('item', f, itemIcon(c, it), it.label, d.i.includes(f)); }).join('')}</div>`
                 + (c.multi ? '<p class="av-hint">Aqui dá para combinar vários.</p>' : '');
         } else {
             p = `<p class="av-hint">Por último, o plano de fundo.</p><div class="av-grid">${
                 opt('bg', '', noneIcon, 'Sem fundo', !d.bg)}${
-                CATALOG.bgs.map(b => opt('bg', b.id, iconImg('bg-' + b.id + '.jpg'), b.label, d.bg === b.id)).join('')}</div>`;
+                CATALOG.bgs.map(b => opt('bg', b.id, bgIcon(b.id), b.label, d.bg === b.id)).join('')}</div>`;
         }
         root.querySelector('#av-panel').innerHTML = p;
         const back = root.querySelector('[data-act="back"]'), next = root.querySelector('[data-act="next"]');
