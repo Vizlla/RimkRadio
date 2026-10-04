@@ -1,0 +1,716 @@
+:root {
+    --blue: #99FF00;
+    --yellow: #E8E8E3;
+    --edge: rgba(153, 255, 0, 0.16);
+}
+
+body {
+    font-family: 'Exo 2', sans-serif;
+    background-color: #050605;
+    color: #E8E8E3;
+    background-image:
+        radial-gradient(60% 50% at 15% 0%, rgba(153, 255, 0, 0.22), transparent 70%),
+        radial-gradient(45% 40% at 100% 100%, rgba(232, 232, 227, 0.08), transparent 70%);
+    background-attachment: fixed;
+}
+
+/* Horizonte em perspectiva (azul) */
+.horizon {
+    position: fixed;
+    bottom: 0; left: 0;
+    width: 100%; height: 45vh;
+    background-image:
+        linear-gradient(to top, rgba(153, 255, 0, 0.20) 1px, transparent 1px),
+        linear-gradient(to right, rgba(153, 255, 0, 0.12) 1px, transparent 1px);
+    background-size: 100% 34px, 64px 100%;
+    transform: perspective(520px) rotateX(62deg);
+    transform-origin: bottom center;
+    -webkit-mask-image: linear-gradient(to top, #000, transparent 85%);
+    mask-image: linear-gradient(to top, #000, transparent 85%);
+    opacity: 0.5;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.panel {
+    background: rgba(8, 12, 6, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--edge);
+    border-radius: 20px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* Único elemento com neon forte: o player */
+.player-frame {
+    border-radius: 24px;
+    overflow: hidden;
+    background: #060906;
+    border: 1px solid rgba(153, 255, 0, 0.6);
+    box-shadow:
+        0 0 0 4px rgba(153, 255, 0, 0.07),
+        0 0 48px rgba(153, 255, 0, 0.30),
+        0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.glow-blue { color: var(--blue); text-shadow: 0 0 12px rgba(153, 255, 0, 0.7); }
+.glow-yellow { color: var(--yellow); text-shadow: 0 0 12px rgba(232, 232, 227, 0.55); }
+
+/* Campos */
+.field {
+    width: 100%;
+    background: rgba(2, 4, 2, 0.7);
+    border: 1px solid var(--edge);
+    border-radius: 14px;
+    padding: 0.8rem 1rem;
+    color: #fff;
+    font-size: 0.9rem;
+    transition: border-color .2s, box-shadow .2s;
+}
+.field::placeholder { color: #6B7566; }
+.field:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(153, 255, 0, 0.25);
+}
+
+/* Botões */
+.btn {
+    border-radius: 14px;
+    font-weight: 600;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, color .2s ease;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn-yellow { background: var(--yellow); color: #0A0A0A; }
+.btn-yellow:hover { box-shadow: 0 0 22px rgba(232, 232, 227, 0.5); }
+.btn-blue {
+    background: rgba(153, 255, 0, 0.14);
+    border: 1px solid var(--blue);
+    color: #CCFF66;
+}
+.btn-blue:hover { background: var(--blue); color: #fff; box-shadow: 0 0 22px rgba(153, 255, 0, 0.5); }
+
+.icon-btn {
+    width: 2.75rem; height: 2.75rem;
+    border-radius: 9999px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--edge);
+    color: #C3CBBE;
+    transition: color .2s, border-color .2s, background .2s;
+}
+.icon-btn:hover { color: var(--blue); border-color: var(--blue); background: rgba(153, 255, 0, 0.1); }
+
+.play-btn {
+    width: 3.75rem; height: 3.75rem;
+    border-radius: 9999px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--yellow);
+    color: #0A0A0A;
+    font-size: 1.25rem;
+    box-shadow: 0 0 0 6px rgba(232, 232, 227, 0.12), 0 0 30px rgba(232, 232, 227, 0.45);
+    transition: transform .15s ease, box-shadow .2s ease;
+}
+.play-btn:hover { transform: scale(1.06); box-shadow: 0 0 0 8px rgba(232, 232, 227, 0.16), 0 0 40px rgba(232, 232, 227, 0.6); }
+.play-btn:active { transform: scale(0.97); }
+
+.chip {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 9999px;
+    background: rgba(2, 4, 2, 0.6);
+    border: 1px solid var(--edge);
+    font-size: 0.8rem;
+}
+
+/* Equalizador da tela de entrada (único movimento espontâneo) */
+.eq { display: flex; align-items: flex-end; gap: 5px; height: 38px; }
+.eq span {
+    width: 5px; border-radius: 3px;
+    background: linear-gradient(to top, var(--blue), var(--yellow));
+    box-shadow: 0 0 10px rgba(153, 255, 0, 0.6);
+    animation: eq 1.15s ease-in-out infinite;
+    height: 30%;
+}
+.eq span:nth-child(1) { animation-delay: -0.9s; }
+.eq span:nth-child(2) { animation-delay: -0.5s; }
+.eq span:nth-child(3) { animation-delay: -0.2s; }
+.eq span:nth-child(4) { animation-delay: -0.7s; }
+.eq span:nth-child(5) { animation-delay: -0.35s; }
+.eq span:nth-child(6) { animation-delay: -0.1s; }
+.eq span:nth-child(7) { animation-delay: -0.6s; }
+@keyframes eq { 0%, 100% { height: 22%; } 50% { height: 100%; } }
+
+/* Abas de login */
+.tab {
+    flex: 1; padding: 0.6rem; border-radius: 12px; font-size: 0.85rem; font-weight: 600;
+    color: #8E9A88; transition: background .2s, color .2s, box-shadow .2s;
+}
+.tab[aria-selected="true"] { background: rgba(153, 255, 0, 0.16); color: #fff; box-shadow: inset 0 0 0 1px var(--blue); }
+
+/* Chat: responder */
+.reply-btn {
+    opacity: .55; width: 1.75rem; height: 1.75rem; border-radius: 9999px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #8E9A88; font-size: .7rem; transition: opacity .2s, color .2s, background .2s;
+}
+.msg:hover .reply-btn, .reply-btn:focus-visible { opacity: 1; }
+.reply-btn:hover { color: var(--blue); background: rgba(153, 255, 0, 0.12); }
+.reply-quote {
+    border-left: 2px solid; padding: .2rem .55rem; margin-bottom: .4rem; border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06); font-size: .72rem; cursor: pointer; text-align: left;
+}
+.reply-quote:hover { background: rgba(255, 255, 255, 0.1); }
+.msg-flash { animation: flash 1.4s ease-out; border-radius: 12px; }
+@keyframes flash { 0% { background: rgba(232, 232, 227, 0.28); } 100% { background: transparent; } }
+
+/* Anfitrião: tornar outra pessoa anfitriã / expulsar */
+.promote-btn { margin-left: .1rem; color: var(--yellow); opacity: .75; font-size: .7rem; text-shadow: none; transition: opacity .2s; }
+.promote-btn:hover { opacity: 1; }
+.kick-btn { margin-left: .1rem; color: #FF6B7A; opacity: .75; font-size: .7rem; text-shadow: none; transition: opacity .2s; }
+.kick-btn:hover { opacity: 1; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(153, 255, 0, 0.35); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(153, 255, 0, 0.65); }
+
+:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ============================================================
+   LAYOUT: o app ocupa exatamente a altura da tela.
+   A página não rola; playlist e chat rolam por dentro, e o campo
+   de digitar do chat fica sempre visível.
+   ============================================================ */
+html, body { height: 100%; }
+.app-shell { height: 100vh; height: 100dvh; overflow: hidden; }
+
+/* Só rola se a janela for pequena demais para o conteúdo */
+.app-main { min-height: 0; overflow-y: auto; overflow-x: hidden; }
+
+/* Lista de resultados da busca: nunca maior que a tela */
+#search-results { max-height: min(340px, 45dvh); }
+
+/* Vídeo pode encolher em telas baixas (mantém 16:9 quando cabe) */
+.video-box { min-height: 120px; }
+#youtube-player, #youtube-player iframe { width: 100%; height: 100%; }
+
+@media (min-width: 1024px) {
+    /* Desktop: a página nunca rola; tudo se ajusta ao tamanho do navegador.
+       Os seletores com #room-view têm prioridade sobre as classes utilitárias do Tailwind
+       (ex.: grid-cols-1), que senão sobrescrevem as 3 colunas. */
+    .app-main { overflow: hidden; }
+    #room-view.room-view {
+        min-height: 0;
+        /* 3 colunas: playlist (esq) | vídeo + membros (meio, a maior) | chat (dir) */
+        grid-template-columns: minmax(220px, 2.5fr) minmax(0, 6fr) minmax(280px, 3fr) !important;
+        grid-template-rows: minmax(0, 1fr) !important;   /* linha única = altura disponível */
+    }
+    #room-view .room-col-playlist,
+    #room-view .room-col-chat,
+    #room-view .room-col-center { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+    #room-view .room-col-playlist > .panel,
+    #room-view .room-col-chat > .panel { flex: 1 1 0; min-height: 0; height: auto; }
+    #room-view .playlist-panel, #room-view .chat-panel { min-height: 0; max-height: none; }
+
+    /* Centro: o vídeo cresce até onde der (16:9 pela largura); se faltar altura, ele
+       encolhe antes de esconder "Membros da sessão", que ocupa o que sobrar */
+    #room-view .room-col-center > .player-frame { flex: 0 1 auto; min-height: 0; }
+    #room-view .room-col-center .video-box { flex: 1 1 auto; min-height: 0; }
+    #room-view .room-col-center > .members-panel { flex: 1 0 auto; min-height: 9.5rem; }
+    #room-view .room-col-center .play-btn { width: 2.75rem; height: 2.75rem; font-size: 1rem; box-shadow: 0 0 0 4px rgba(232, 232, 227, 0.12), 0 0 22px rgba(232, 232, 227, 0.4); }
+    #room-view .room-col-center .icon-btn { width: 2.25rem; height: 2.25rem; }
+}
+
+/* Telas baixas: economiza espaço no login */
+@media (max-height: 720px) {
+    .eq { display: none; }
+}
+
+/* ============================================================
+   LISTA DE SALAS
+   ============================================================ */
+/* (estilos da lista de salas ficam no bloco "TELA INICIAL" no fim do arquivo) */
+
+/* ============================================================
+   TÍTULOS, MEMBROS E AVATARES
+   ============================================================ */
+.panel-title { text-transform: uppercase; letter-spacing: .04em; }
+
+.members-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr)); gap: .9rem .5rem;
+    max-height: clamp(5.75rem, 16dvh, 13rem); overflow-y: auto; padding: .25rem 0;
+}
+.member-card { display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; }
+.member-avatar {
+    position: relative; width: 3rem; height: 3rem; border-radius: 9999px;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid; background: rgba(2, 4, 2, 0.7);
+    font-family: 'Exo 2', sans-serif; font-weight: 700; font-size: 1.1rem;
+}
+.member-crown { position: absolute; top: -.55rem; right: -.2rem; font-size: .7rem; color: var(--yellow); filter: drop-shadow(0 0 4px rgba(232, 232, 227, .6)); }
+.member-name { margin-top: .4rem; max-width: 100%; font-size: .8rem; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.member-status { display: flex; align-items: center; gap: .3rem; font-size: .7rem; color: #4ADE80; }
+.member-status span { width: 6px; height: 6px; border-radius: 9999px; background: #4ADE80; box-shadow: 0 0 6px #4ADE80; }
+.member-tools { display: flex; align-items: center; justify-content: center; gap: .4rem; margin-top: .2rem; height: 1.25rem; }   /* altura fixa: com ou sem botões o painel não muda */
+.member-crown.cohost { color: #99FF00; filter: drop-shadow(0 0 4px rgba(153, 255, 0, .6)); }
+.promote-btn.on { color: #99FF00; opacity: 1; text-shadow: 0 0 6px rgba(153, 255, 0, .7); }
+/* trava de controles no cabeçalho de Membros: nunca quebra linha nem cresce o painel */
+#lock-row .lock-text { display: none; }
+@media (min-width: 640px) { #lock-row .lock-text { display: inline; } }
+
+.chat-avatar {
+    width: 1.6rem; height: 1.6rem; border-radius: 9999px; border: 1.5px solid; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(2, 4, 2, 0.7); font-family: 'Exo 2', sans-serif; font-weight: 700; font-size: .7rem;
+}
+
+/* ============================================================
+   SELETOR DE COR DO NOME (18 cores neon)
+   ============================================================ */
+.color-btn-dot {
+    width: 1rem; height: 1rem; border-radius: 9999px; display: block;
+    background: var(--blue); box-shadow: 0 0 10px currentColor;
+}
+.color-popover {
+    position: absolute; top: 3.6rem; right: .75rem; z-index: 30; width: min(19rem, calc(100% - 1.5rem));
+    padding: .9rem; border-radius: 16px;
+    background: #0A0E08; border: 1px solid rgba(153, 255, 0, 0.45);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+.color-popover.hidden { display: none; }
+.color-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: .55rem; }
+.color-swatch {
+    aspect-ratio: 1; border-radius: 9999px; background: var(--c);
+    display: flex; align-items: center; justify-content: center;
+    color: #050605; font-size: .7rem; border: 2px solid transparent;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--c) 70%, transparent);
+    transition: transform .15s ease, box-shadow .2s ease;
+}
+.color-swatch:hover:not(:disabled) { transform: scale(1.12); box-shadow: 0 0 18px var(--c); }
+.color-swatch.is-selected { border-color: #fff; box-shadow: 0 0 0 2px #0A0E08, 0 0 0 4px var(--c), 0 0 18px var(--c); }
+.color-swatch.is-taken { opacity: .22; cursor: not-allowed; box-shadow: none; }
+
+/* ============================================================
+   BALÃO COM O NOME COMPLETO DA MÚSICA
+   ============================================================ */
+.song-tip {
+    position: fixed; z-index: 90; pointer-events: none;
+    max-width: min(22rem, calc(100vw - 1rem)); padding: .55rem .8rem;
+    background: #0A0E08; color: #fff; font-size: .8rem; line-height: 1.35; overflow-wrap: anywhere;
+    border: 1px solid rgba(153, 255, 0, 0.55); border-radius: 12px;
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6), 0 0 14px rgba(153, 255, 0, 0.25);
+    opacity: 0; transform: translateY(-2px); transition: opacity .15s ease, transform .15s ease;
+}
+.song-tip.show { opacity: 1; transform: none; }
+
+/* ============================================================
+   REORDENAR A PLAYLIST
+   ============================================================ */
+.song-row { position: relative; }
+.drag-handle { color: #6B7566; padding: .4rem .35rem; cursor: grab; font-size: .8rem; }
+.song-row:hover .drag-handle { color: var(--blue); }
+.song-row:active .drag-handle { cursor: grabbing; }
+.move-btn {
+    width: 1.5rem; height: 1.15rem; display: flex; align-items: center; justify-content: center;
+    color: #8E9A88; font-size: .65rem; border-radius: 6px; transition: color .2s, background .2s;
+}
+.move-btn:hover:not(:disabled) { color: var(--blue); background: rgba(153, 255, 0, 0.14); }
+.move-btn:disabled { opacity: .25; cursor: default; }
+.song-row.is-dragging { opacity: .4; }
+.song-row.drop-above::before, .song-row.drop-below::after {
+    content: ''; position: absolute; left: 6px; right: 6px; height: 3px; border-radius: 3px;
+    background: var(--yellow); box-shadow: 0 0 10px rgba(232, 232, 227, 0.7); pointer-events: none;
+}
+.song-row.drop-above::before { top: -7px; }
+.song-row.drop-below::after { bottom: -7px; }
+
+/* Janela de confirmação */
+.confirm-backdrop {
+    position: fixed; inset: 0; z-index: 90;
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem;
+    background: rgba(2, 4, 2, 0.72);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .18s ease, visibility 0s linear .18s;
+}
+.confirm-backdrop.open { opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s; }
+.confirm-card {
+    width: 100%; max-width: 26rem; padding: 1.25rem;
+    border-color: rgba(153, 255, 0, 0.45);
+    transform: translateY(8px) scale(.98);
+    transition: transform .18s ease;
+}
+.confirm-backdrop.open .confirm-card { transform: none; }
+.confirm-icon {
+    flex: none; width: 2.5rem; height: 2.5rem; border-radius: 9999px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(153, 255, 0, 0.12); border: 1px solid var(--edge);
+}
+.btn-danger { background: rgba(248, 113, 113, 0.14); border: 1px solid #F87171; color: #FECACA; }
+.btn-danger:hover { background: #EF4444; color: #fff; box-shadow: 0 0 22px rgba(239, 68, 68, 0.45); }
+.confirm-backdrop .btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+    .confirm-backdrop, .confirm-card { transition: none; }
+}
+
+/* ============================================================
+   RETROFUTURISTA — preto + verde neon (#99FF00) + Exo 2 itálico
+   ============================================================ */
+.font-display, h1, h2, .btn, .tab, .room-name { font-style: italic; font-weight: 800 !important; letter-spacing: .01em; }
+.panel, .player-frame { border-radius: 8px !important; border-color: rgba(153,255,0,.35); box-shadow: 0 0 22px rgba(153,255,0,.08), 0 12px 40px rgba(0,0,0,.6); }
+.field, .btn, .tab { border-radius: 4px !important; }
+.btn-yellow, .play-btn { background: var(--blue); color: #050605; }
+.btn-yellow:hover { box-shadow: 0 0 22px rgba(153,255,0,.55); }
+.play-btn { box-shadow: 0 0 0 5px rgba(153,255,0,.12), 0 0 30px rgba(153,255,0,.5); }
+#auth-error { color: #FF6B7A; }
+body::after { content:''; position: fixed; inset: 0; pointer-events: none; z-index: 70;
+  background: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.16) 2px 3px); }
+
+/* Tela inicial: logo, barra "99%", globo wireframe e glifos */
+#auth-view { position: relative; }
+#auth-view > .panel { position: relative; z-index: 1; }
+#auth-view .panel::before, #auth-view .panel::after { content:''; position:absolute; width:16px; height:16px; border:0 solid var(--blue); pointer-events:none; }
+#auth-view .panel::before { top:10px; left:10px; border-width:2px 0 0 2px; }
+#auth-view .panel::after { bottom:10px; right:10px; border-width:0 2px 2px 0; }
+.hero-logo { display:flex; flex-direction:column; align-items:center; width:100%; }
+.hero-logo-img { height: clamp(64px, 15dvh, 140px); width:auto; max-width:100%; filter: drop-shadow(0 0 14px rgba(153,255,0,.35)); }
+.dl-strip { display:flex; align-items:center; gap:.6rem; width:100%; max-width:21rem; margin-top:.8rem;
+  font-family:'VT323', monospace; font-size:1.05rem; line-height:1; color:var(--blue); text-shadow:0 0 8px rgba(153,255,0,.6); }
+.dl-bar { flex:1; height:16px; border:2px solid var(--blue); padding:2px; display:flex; }
+.dl-bar i { display:block; height:100%; width:99%; background:repeating-linear-gradient(90deg,var(--blue) 0 6px,transparent 6px 9px); animation: dl 3.2s steps(22) infinite; }
+@keyframes dl { 0% { width:8%; } 85%,100% { width:99%; } }
+.retro-deco { position:absolute; inset:0; z-index:0; pointer-events:none; color:var(--blue); overflow:hidden; }
+.retro-deco svg, .rd-tag { position:absolute; }
+.rd-globe { width:min(52vmin,520px); right:-6vmin; bottom:-8vmin; opacity:.16; }
+.rd-burst { width:min(16vmin,150px); left:2vmin; top:3vmin; opacity:.28; }
+.rd-oct { width:min(11vmin,110px); right:6vmin; top:4vmin; opacity:.28; }
+.rd-star { width:28px; left:8vmin; bottom:7vmin; opacity:.5; filter:drop-shadow(0 0 8px currentColor); }
+.rd-tag { left:3vmin; bottom:2vmin; font-family:'VT323',monospace; font-size:1rem; letter-spacing:.15em; padding:0 .5rem; border:2px solid var(--blue); opacity:.35; }
+@media (max-height: 720px) { .dl-strip { display:none; } .hero-logo-img { height:72px; } }
+
+/* selo de live na playlist */
+.live-badge {
+    display: inline-block; margin-right: 6px; padding: 0 5px;
+    border: 1px solid #FF3860; border-radius: 3px; color: #FF3860;
+    font-size: 9px; line-height: 15px; font-weight: 800; letter-spacing: .08em;
+    vertical-align: 1px; font-style: normal;
+}
+
+/* Mini espaçonaves cruzando o céu em arco (tela de login). Duas camadas: o .ship anda na horizontal
+   (linear) e o <svg> sobe e desce (ease-in-out) inclinando o nariz, como a lua atravessando o céu. */
+.ships { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; color: var(--blue); }
+.ship { position: absolute; left: 0; top: var(--y); animation: ship-x var(--dur) linear var(--delay) infinite; will-change: transform; }
+.ship svg { display: block; width: var(--w); height: auto; overflow: visible; will-change: transform;
+    filter: drop-shadow(0 0 6px rgba(153,255,0,.7));
+    animation: ship-arc var(--dur) ease-in-out var(--delay) infinite; }
+.ship.rtl { animation-name: ship-x-rtl; }
+.ship.rtl svg { animation-name: ship-arc-rtl; }
+.ship .flame { animation: flame .18s steps(2) infinite; transform-origin: 3px 12px; }
+@keyframes ship-x     { from { transform: translateX(-100px); } to { transform: translateX(calc(100vw + 100px)); } }
+@keyframes ship-x-rtl { from { transform: translateX(calc(100vw + 100px)); } to { transform: translateX(-100px); } }
+@keyframes ship-arc     { 0% { transform: translateY(0) rotate(-18deg); } 50% { transform: translateY(calc(var(--arc) * -1)) rotate(0deg); } 100% { transform: translateY(0) rotate(18deg); } }
+@keyframes ship-arc-rtl { 0% { transform: translateY(0) scaleX(-1) rotate(-18deg); } 50% { transform: translateY(calc(var(--arc) * -1)) scaleX(-1) rotate(0deg); } 100% { transform: translateY(0) scaleX(-1) rotate(18deg); } }
+@keyframes flame { 0% { transform: scaleX(1); opacity: .95; } 100% { transform: scaleX(.55); opacity: .6; } }
+@media (prefers-reduced-motion: reduce) { .ships { display: none; } }
+
+/* Tela de criar/entrar em salas: painéis acima das naves */
+#setup-view > .panel, #setup-view > aside { position: relative; z-index: 1; }
+
+/* Efeito de TV de tubo (linhas horizontais, body::after, z-index 70) em tudo MENOS no player.
+   O <main> não pode criar um contexto de empilhamento próprio (senão prenderia o player abaixo do efeito);
+   o player sobe acima do efeito e janelas/avisos sobem acima do player. */
+.app-main { z-index: auto !important; }
+.player-frame { position: relative; z-index: 71; }
+#notification-modal { z-index: 95 !important; }
+
+/* ============================================================
+   MINI RÁDIO (RIMK FM) nas telas de login e criar sala
+   ============================================================ */
+/* Abaixo de 1280px a rádio vai para baixo dos painéis: deixa a tela rolar (só fora da sala). */
+@media (min-width: 1024px) {
+    .app-main:has(#room-view.hidden) { overflow-y: auto; }
+}
+
+.radio-card { position: relative; z-index: 1; padding: .85rem; gap: .65rem; }
+.radio-card::before, .radio-card::after { content:''; position:absolute; width:16px; height:16px; border:0 solid var(--blue); pointer-events:none; }
+.radio-card::before { top:6px; left:6px; border-width:2px 0 0 2px; }
+.radio-card::after { bottom:6px; right:6px; border-width:0 2px 2px 0; }
+
+.radio-top { display:flex; align-items:center; justify-content:space-between; gap:.5rem; padding:0 .25rem; }
+.radio-tag { font-family:'VT323', monospace; font-size:1.25rem; line-height:1; letter-spacing:.14em; color:var(--blue); text-shadow:0 0 8px rgba(153,255,0,.6); }
+.radio-live { display:inline-flex; align-items:center; gap:.35rem; font-size:.65rem; font-weight:800; letter-spacing:.1em; color:#FF3860; border:1px solid #FF3860; border-radius:3px; padding:0 .4rem; line-height:1.15rem; }
+.radio-live::before { content:''; width:6px; height:6px; border-radius:50%; background:#FF3860; animation: radio-blink 1.4s steps(2) infinite; }
+@keyframes radio-blink { 50% { opacity:.2; } }
+.radio-live[hidden], .radio-gate[hidden], .radio-msg[hidden] { display:none; }
+
+/* Vídeo: 200px de altura (mínimo exigido pelo YouTube para o player embutido) */
+.radio-video { position:relative; height:200px; background:#000; border:1px solid var(--edge); border-radius:4px; overflow:hidden; }
+.radio-video #radio-frame, .radio-video iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+.radio-gate {
+    position:absolute; left:50%; bottom:10px; transform:translateX(-50%); z-index:2; white-space:nowrap;
+    font-family:'VT323', monospace; font-size:1.2rem; line-height:1; letter-spacing:.08em; cursor:pointer;
+    padding:.4rem .9rem; color:#050605; background:var(--blue); border:2px solid var(--blue); border-radius:4px;
+    box-shadow:0 0 18px rgba(153,255,0,.55); animation: radio-pulse 1.6s ease-in-out infinite;
+}
+.radio-gate:hover { background:#fff; border-color:#fff; }
+@keyframes radio-pulse { 50% { box-shadow:0 0 6px rgba(153,255,0,.25); } }
+.radio-msg {
+    position:absolute; inset:0; z-index:1; display:flex; align-items:center; justify-content:center; text-align:center;
+    padding:1rem 1rem 3.2rem; font-size:.8rem; line-height:1.4; color:#C3CBBE; background:rgba(3,5,3,.92);
+}
+
+.radio-now { display:flex; align-items:center; gap:.5rem; min-width:0; padding:0 .25rem; }
+.radio-genre { flex:none; font-family:'VT323', monospace; font-size:1.05rem; line-height:1; letter-spacing:.1em; text-transform:uppercase; color:#050605; background:var(--blue); padding:.1rem .45rem; border-radius:3px; }
+.radio-title { min-width:0; flex:1; font-size:.8rem; color:#C3CBBE; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.radio-ctrl { display:flex; align-items:center; gap:.5rem; padding:0 .25rem; }
+.radio-ctrl .icon-btn { width:2.25rem; height:2.25rem; flex:none; font-size:.85rem; }
+.radio-vol { flex:1; min-width:0; accent-color:var(--blue); cursor:pointer; }
+
+.radio-chips { display:flex; flex-wrap:wrap; gap:.35rem; padding:0 .25rem .1rem; }
+.radio-chip {
+    font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; cursor:pointer;
+    padding:.3rem .6rem; border:1px solid var(--edge); border-radius:4px; color:#8E9A88; background:rgba(3,6,3,.6);
+    transition: color .2s, border-color .2s, background .2s;
+}
+.radio-chip:hover { color:#fff; border-color:var(--blue); }
+.radio-chip[aria-pressed="true"] { color:#fff; border-color:var(--blue); background:rgba(153,255,0,.16); box-shadow:inset 0 0 0 1px var(--blue); }
+.radio-chip:focus-visible, .radio-gate:focus-visible { outline:2px solid var(--yellow); outline-offset:2px; }
+@media (prefers-reduced-motion: reduce) { .radio-gate, .radio-live::before { animation:none; } }
+
+/* ============================================================
+   CARD "RIMKERAMA" (canto superior direito do cabeçalho; só aparece no login e na criação de sala)
+   ============================================================ */
+.site-card {
+    position: relative; display: inline-flex; align-items: center; gap: .7rem; flex: none;
+    padding: .4rem 1rem .4rem .45rem; border-radius: 999px; text-decoration: none; overflow: hidden;
+    background:
+        repeating-linear-gradient(to bottom, rgba(153,255,0,.05) 0 1px, transparent 1px 3px),
+        linear-gradient(135deg, rgba(20,48,6,.9), rgba(6,14,4,.95));
+    border: 2px solid rgba(153,255,0,.9);
+    box-shadow: 0 0 16px rgba(153,255,0,.35), inset 0 0 14px rgba(153,255,0,.15);
+    transition: transform .2s, box-shadow .2s;
+}
+.site-card:hover { transform: translateY(-1px); box-shadow: 0 0 26px rgba(153,255,0,.6), inset 0 0 18px rgba(153,255,0,.25); }
+.site-card:focus-visible { outline: 2px solid var(--yellow); outline-offset: 3px; }
+.site-card-logo {
+    width: 40px; height: 40px; flex: none; object-fit: contain; border-radius: 50%; padding: 0;
+    background: rgba(0,0,0,.45);
+    filter: drop-shadow(0 0 6px rgba(153,255,0,.45));
+}
+.site-card-text { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.site-card-title {
+    font-family: 'VT323', monospace; font-size: 1.35rem; line-height: 1; letter-spacing: .14em; white-space: nowrap;
+    color: var(--blue); text-shadow: 0 0 10px rgba(153,255,0,.7);
+}
+.site-card-sub { font-size: .68rem; font-weight: 700; letter-spacing: .1em; line-height: 1; color: #C3CBBE; white-space: nowrap; }
+.site-card-arrow { flex: none; align-self: flex-start; margin-top: .15rem; font-size: .8rem; line-height: 1; color: #8E9A88; transition: color .2s, transform .2s; }
+.site-card:hover .site-card-arrow { color: var(--blue); transform: translate(2px,-2px); }
+/* Dentro de uma sala o card some */
+body:has(#room-view:not(.hidden)) .site-card { display: none; }
+@media (max-width: 480px) {
+    .site-card { gap: .5rem; padding-right: .75rem; }
+    .site-card-logo { width: 34px; height: 34px; }
+    .site-card-title { font-size: 1.15rem; }
+}
+@media (prefers-reduced-motion: reduce) { .site-card, .site-card-arrow { transition: none; } }
+
+
+/* ============================================================
+   TELA INICIAL (criar sala | salas abertas | rádio)
+   Tudo alinhado pelo topo, painéis com a mesma altura.
+   ============================================================ */
+#home-view { align-items: center; justify-content: flex-start; gap: 1.5rem; padding-top: clamp(.5rem, 3vh, 2rem); }
+#home-view > #auth-view, #home-view > #setup-view { flex: 1 1 0; min-width: 0; }
+#auth-view { padding-block: 0; }
+@media (min-width: 1280px) {
+    #home-view { flex-direction: row; align-items: flex-start; justify-content: center; flex-wrap: nowrap; max-width: 1280px; margin: 0 auto; width: 100%; }
+    #auth-view { align-self: stretch; align-items: flex-start; justify-content: center; }
+}
+
+/* Coluna lateral: só a mini rádio (o ranking agora fica dentro de cada sala) */
+.side-col { position: relative; z-index: 1; width: 100%; max-width: 28rem; display: flex; flex-direction: column; gap: 1rem; }
+.side-col > .panel { width: 100%; }
+@media (min-width: 1280px) { .side-col { width: 20rem; max-width: none; flex: none; } }
+
+#setup-view { padding-block: 0; display: grid; gap: 1.5rem; align-items: stretch; justify-items: center; align-content: start; }
+#setup-view.hidden { display: none; }
+#setup-view > .setup-card { width: 100%; max-width: 28rem; display: flex; flex-direction: column; border-radius: 8px; }
+@media (min-width: 1024px) {
+    #setup-view { grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr); justify-items: stretch; }
+    #setup-view > .setup-card { max-width: none; }
+}
+@media (min-width: 1280px) {
+    #setup-view { grid-template-columns: minmax(18rem, 22rem) minmax(0, 1fr); }
+}
+
+/* Salas abertas */
+.setup-rooms { padding: 1.25rem 1.25rem 1rem; min-height: 30rem; }
+.rooms-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding-bottom: .9rem; }
+.room-count-pill { min-width: 1.7rem; height: 1.7rem; padding: 0 .55rem; display: inline-flex; align-items: center; justify-content: center;
+    font-size: .78rem; font-weight: 700; color: var(--blue); border: 1px solid rgba(153,255,0,.45); background: rgba(153,255,0,.08); border-radius: 4px; }
+.rooms-cols { display: grid; grid-template-columns: 2.4rem minmax(0,1fr) 4.2rem 5.2rem; align-items: center; gap: .75rem;
+    padding: .45rem .9rem; font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #6B7566;
+    border-top: 1px solid var(--edge); border-bottom: 1px solid var(--edge); background: rgba(153,255,0,.03); }
+.rooms-cols span:nth-child(1) { grid-column: 1 / 3; }
+.rooms-cols span:nth-child(2) { text-align: center; }
+
+.room-list { flex: 1 1 auto; min-height: 10rem; max-height: 21rem; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(153,255,0,.35) transparent; }
+.room-item { width: 100%; display: grid; grid-template-columns: 2.4rem minmax(0,1fr) 4.2rem 5.2rem; align-items: center; gap: .75rem;
+    padding: .7rem .9rem; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--edge); border-radius: 0;
+    transition: background .15s, box-shadow .15s; cursor: pointer; }
+.room-item:nth-child(even) { background: rgba(153,255,0,.025); }
+.room-item:hover, .room-item:focus-visible { background: rgba(153,255,0,.12); box-shadow: inset 3px 0 0 var(--blue); outline: none; }
+.room-ico { width: 2.4rem; height: 2.4rem; display: inline-flex; align-items: center; justify-content: center; font-size: .85rem; color: var(--blue);
+    border: 1px solid rgba(153,255,0,.35); background: rgba(153,255,0,.07); border-radius: 4px; }
+.room-main { min-width: 0; }
+.room-name { display: block; font-family: 'Exo 2', sans-serif; font-weight: 600; font-size: .92rem; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.room-meta { display: block; font-size: .74rem; color: #8E9A88; margin-top: .1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.room-people { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; font-size: .8rem; color: #C3CBBE; }
+.room-people i { font-size: .7rem; color: var(--blue); }
+.room-go { justify-self: end; font-size: .74rem; font-weight: 700; padding: .35rem .8rem; border-radius: 4px; text-transform: uppercase; letter-spacing: .05em;
+    background: rgba(153,255,0,.12); border: 1px solid var(--blue); color: #CCFF66; transition: background .15s, color .15s; }
+.room-item:hover .room-go, .room-item:focus-visible .room-go { background: var(--blue); color: #050605; }
+.room-empty { text-align: center; padding: 2.5rem .5rem; color: #6B7566; font-size: .85rem; line-height: 1.5; }
+
+/* Entrar por código (rodapé do painel) */
+.rooms-join { margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--edge); }
+.join-row { display: grid; grid-template-columns: minmax(0,.9fr) minmax(0,1.3fr) auto; gap: .5rem; }
+
+@media (max-width: 520px) {
+    .rooms-cols { grid-template-columns: 2.4rem minmax(0,1fr) 3rem 4.4rem; gap: .5rem; padding-inline: .6rem; }
+    .room-item { grid-template-columns: 2.4rem minmax(0,1fr) 3rem 4.4rem; gap: .5rem; padding-inline: .6rem; }
+    .join-row { grid-template-columns: 1fr 1fr; }
+    .join-row .btn { grid-column: 1 / -1; padding-block: .8rem; }
+}
+
+
+/* ============================================================
+   CATEGORIAS DE SALA (cada categoria tem ícone e cor)
+   ============================================================ */
+.cat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; }
+.cat-opt { --c: #99FF00; display: flex; align-items: center; justify-content: flex-start; gap: .45rem; min-width: 0;
+    padding: .45rem .55rem; border-radius: 6px; cursor: pointer; text-align: left; font-size: .72rem; font-weight: 700; line-height: 1.1;
+    color: var(--c); border: 1px solid color-mix(in srgb, var(--c) 28%, transparent); background: color-mix(in srgb, var(--c) 6%, transparent);
+    transition: background .15s, border-color .15s, box-shadow .15s; }
+.cat-opt i { font-size: .9rem; width: 1.05rem; text-align: center; flex: none; }
+.cat-opt span { color: #C3CBBE; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-opt:hover, .cat-opt:focus-visible { background: color-mix(in srgb, var(--c) 15%, transparent); outline: none; }
+.cat-opt[aria-checked="true"] { border-color: var(--c); background: color-mix(in srgb, var(--c) 22%, transparent); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 40%, transparent); }
+.cat-opt[aria-checked="true"] span { color: #fff; }
+.cat-popover { position: absolute; top: calc(100% + .5rem); left: 0; z-index: 60; width: min(20rem, 88vw); padding: .9rem; border-radius: 8px;
+    background: rgba(8, 12, 6, .97); border: 1px solid color-mix(in srgb, var(--cat, #99FF00) 45%, transparent); box-shadow: 0 12px 40px rgba(0, 0, 0, .7); }
+.cat-popover.hidden { display: none; }
+.cat-chip { --c: var(--cat, #99FF00); color: var(--c); border-color: color-mix(in srgb, var(--c) 45%, transparent); background: color-mix(in srgb, var(--c) 9%, rgba(2, 4, 2, .6));
+    font-weight: 700; cursor: default; }
+.cat-chip.is-admin { cursor: pointer; }
+.cat-chip.is-admin:hover { background: color-mix(in srgb, var(--c) 18%, rgba(2, 4, 2, .6)); }
+
+/* a sala inteira ganha a cor da categoria */
+body[data-cat] header.panel,
+body[data-cat] #room-view .panel,
+body[data-cat] #room-view .player-frame {
+    border-color: color-mix(in srgb, var(--cat) 42%, transparent) !important;
+    box-shadow: 0 0 22px color-mix(in srgb, var(--cat) 12%, transparent), 0 12px 40px rgba(0, 0, 0, .6) !important; }
+body[data-cat] #room-view .player-frame { box-shadow: 0 0 0 4px color-mix(in srgb, var(--cat) 8%, transparent), 0 0 44px color-mix(in srgb, var(--cat) 28%, transparent), 0 24px 60px rgba(0, 0, 0, .6) !important; }
+body[data-cat] #room-view { --blue: var(--cat); }
+body[data-cat] #room-view .text-nblue { color: var(--cat) !important; }
+body[data-cat] #room-view .border-nblue { border-color: var(--cat) !important; }
+body[data-cat] #room-view .play-btn { color: #050605; }
+
+/* itens da lista de salas: ícone e cor da categoria */
+.room-item { --c: var(--cat, #99FF00); box-shadow: inset 3px 0 0 color-mix(in srgb, var(--c) 55%, transparent); }
+.room-item .room-ico { color: var(--c); border-color: color-mix(in srgb, var(--c) 45%, transparent); background: color-mix(in srgb, var(--c) 10%, transparent); }
+.room-item .room-people i { color: var(--c); }
+.room-item .room-go { border-color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); color: var(--c); }
+.room-item:hover, .room-item:focus-visible { background: color-mix(in srgb, var(--c) 12%, transparent); box-shadow: inset 4px 0 0 var(--c); }
+.room-item:hover .room-go, .room-item:focus-visible .room-go { background: var(--c); color: #050605; }
+.room-cat { font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: .66rem; color: var(--c); margin-right: .35rem; }
+.room-lock { font-size: .65rem; color: #8E9A88; margin-left: .35rem; }
+
+/* ============================================================
+   LIKE / DESLIKE + mascotes (Rimk e Zunk)
+   ============================================================ */
+.vote-btn { display: inline-flex; align-items: center; gap: .4rem; height: 2.25rem; padding: 0 .8rem; border-radius: 999px; cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .04); color: #C3CBBE; font-size: .8rem; font-weight: 700;
+    transition: color .15s, border-color .15s, background .15s, box-shadow .15s; }
+.vote-btn i { font-size: .85rem; }
+.vote-btn span { min-width: .7rem; text-align: left; font-variant-numeric: tabular-nums; }
+.vote-up:hover:not(:disabled), .vote-up[aria-pressed="true"] { color: #99FF00; border-color: #99FF00; background: rgba(153, 255, 0, .14); box-shadow: 0 0 14px rgba(153, 255, 0, .35); }
+.vote-down:hover:not(:disabled), .vote-down[aria-pressed="true"] { color: #FF6B78; border-color: #FF6B78; background: rgba(255, 93, 108, .13); box-shadow: 0 0 14px rgba(255, 93, 108, .3); }
+.vote-btn:disabled { opacity: .4; cursor: not-allowed; }
+.vote-btn:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+.vote-btn.pop i { animation: votePop .38s ease; }
+@keyframes votePop { 0% { transform: scale(1); } 40% { transform: scale(1.55) rotate(-14deg); } 100% { transform: scale(1); } }
+
+.reaction-stage { position: absolute; left: 0; right: 0; bottom: 100%; height: 0; z-index: 6; pointer-events: none; display: flex; justify-content: center; }
+.react { position: absolute; bottom: .5rem; display: flex; flex-direction: column; align-items: center; gap: .2rem; opacity: 0; transform-origin: 50% 100%;
+    animation: reactUp 2.4s cubic-bezier(.2, .9, .25, 1) forwards; }
+.react img { width: clamp(64px, 13dvh, 108px); height: auto; filter: drop-shadow(0 0 12px rgba(153, 255, 0, .55)); }
+.react-by { max-width: 14rem; padding: .15rem .65rem; border-radius: 999px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: .7rem; font-weight: 700; color: #CCFF66; background: rgba(5, 6, 5, .85); border: 1px solid rgba(153, 255, 0, .5); }
+.react-down { animation-name: reactDown; }
+.react-down img { width: clamp(72px, 15dvh, 124px); filter: drop-shadow(0 0 12px rgba(255, 93, 108, .5)); }
+.react-down .react-by { color: #FF9AA4; border-color: rgba(255, 93, 108, .55); }
+/* Rimk: sobe pulando e balança o joinha */
+@keyframes reactUp {
+    0% { opacity: 0; transform: translateY(36px) scale(.5); }
+    14% { opacity: 1; transform: translateY(-8px) scale(1.12) rotate(-5deg); }
+    24% { transform: translateY(0) scale(1) rotate(4deg); }
+    34% { transform: rotate(-3deg); }
+    44% { transform: rotate(2deg); }
+    54% { transform: rotate(0); }
+    82% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-16px) scale(.96); }
+}
+/* Zunk: aparece, treme de lado a lado e afunda */
+@keyframes reactDown {
+    0% { opacity: 0; transform: translateY(30px) scale(.55); }
+    14% { opacity: 1; transform: translateY(-4px) scale(1.08); }
+    24% { transform: translateX(-6px) rotate(-3deg); }
+    32% { transform: translateX(6px) rotate(3deg); }
+    40% { transform: translateX(-4px) rotate(-2deg); }
+    48% { transform: translateX(0) rotate(0); }
+    80% { opacity: 1; transform: translateY(2px) scale(.98); }
+    100% { opacity: 0; transform: translateY(22px) scale(.9); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .react, .react-down { animation: reactFade 1.8s ease forwards; }
+    @keyframes reactFade { 0% { opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+    .vote-btn.pop i { animation: none; }
+}
+@media (max-width: 420px) { .vote-btn { padding: 0 .55rem; } .controls-bar { gap: .6rem !important; } }
+
+/* ============================================================
+   RANKING DE LIKES
+   ============================================================ */
+.rank-head { display: flex; align-items: center; gap: .75rem; padding-bottom: .8rem; margin-bottom: .3rem; border-bottom: 1px solid var(--edge); }
+.rank-head img { flex: none; filter: drop-shadow(0 0 8px rgba(153, 255, 0, .4)); }
+.rank-list { list-style: none; margin: 0; padding: 0; }
+.rank-row { display: grid; grid-template-columns: 1.8rem minmax(0, 1fr) auto; align-items: center; gap: .6rem; padding: .5rem .3rem; border-bottom: 1px solid var(--edge); }
+.rank-row:last-child { border-bottom: 0; }
+.rank-row.is-first { background: linear-gradient(90deg, rgba(255, 214, 10, .10), transparent); }
+.rank-pos { font-family: 'VT323', monospace; font-size: 1.4rem; line-height: 1; text-align: center; color: #6B7566; }
+.rank-row:nth-child(1) .rank-pos { color: #FFD60A; font-size: 1rem; filter: drop-shadow(0 0 6px rgba(255, 214, 10, .6)); }
+.rank-row:nth-child(2) .rank-pos { color: #E8E8E3; }
+.rank-row:nth-child(3) .rank-pos { color: #FF9A4D; }
+.rank-who { min-width: 0; }
+.rank-name { display: block; font-weight: 700; font-size: .88rem; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-sub { display: block; font-size: .72rem; color: #8E9A88; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-row.is-now .rank-name { color: #99FF00; }
+.rank-likes { display: inline-flex; align-items: center; gap: .35rem; font-weight: 700; font-size: .82rem; color: #99FF00; font-variant-numeric: tabular-nums; }
+.rank-likes i { font-size: .72rem; }
+.rank-empty { margin: .6rem 0 .2rem; font-size: .8rem; line-height: 1.4; color: #8E9A88; text-align: center; }
+.rank-empty[hidden] { display: none; }
+
+/* Telas baixas: esconde o equalizador da criação de sala */
+@media (max-height: 860px) { .setup-create .eq { display: none; } }

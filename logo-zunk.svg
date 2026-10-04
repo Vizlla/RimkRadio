@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffee88" stop-opacity="1"/>
+      <stop offset="50%" stop-color="#ffcc00" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#ffcc00" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="rimkGlow">
+      <stop offset="0%" stop-color="#ccff88"/>
+      <stop offset="100%" stop-color="#aaff00"/>
+    </radialGradient>
+    <radialGradient id="sahrinGlow">
+      <stop offset="0%" stop-color="#ffee99"/>
+      <stop offset="100%" stop-color="#ffcc00"/>
+    </radialGradient>
+    <radialGradient id="nereidGlow">
+      <stop offset="0%" stop-color="#aaffee"/>
+      <stop offset="100%" stop-color="#00ffcc"/>
+    </radialGradient>
+    <radialGradient id="ferrumGlow">
+      <stop offset="0%" stop-color="#ff8899"/>
+      <stop offset="100%" stop-color="#ff3344"/>
+    </radialGradient>
+
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Anel externo (Pacto dos Quatro) -->
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#00ff66" stroke-width="1" opacity="0.5" stroke-dasharray="3 5"/>
+  <circle cx="100" cy="100" r="88" fill="none" stroke="#ffcc00" stroke-width="1.5" opacity="0.7"/>
+
+  <!-- Órbitas (4 elipses em ângulos diferentes) -->
+  <g opacity="0.55" stroke-width="1.2" fill="none">
+    <ellipse cx="100" cy="100" rx="80" ry="30" stroke="#aaff00" transform="rotate(0 100 100)"/>
+    <ellipse cx="100" cy="100" rx="80" ry="30" stroke="#ffcc00" transform="rotate(45 100 100)"/>
+    <ellipse cx="100" cy="100" rx="80" ry="30" stroke="#00ffcc" transform="rotate(90 100 100)"/>
+    <ellipse cx="100" cy="100" rx="80" ry="30" stroke="#ff3344" transform="rotate(135 100 100)"/>
+  </g>
+
+  <!-- Elétrons (planetas nas órbitas) -->
+  <g filter="url(#softGlow)">
+    <!-- Rimk (verde) -->
+    <circle cx="180" cy="100" r="7" fill="url(#rimkGlow)">
+      <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="30s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Sahrin (amarelo) -->
+    <circle cx="156.6" cy="156.6" r="7" fill="url(#sahrinGlow)">
+      <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="30s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Nereid (ciano) -->
+    <circle cx="100" cy="180" r="7" fill="url(#nereidGlow)">
+      <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="30s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Ferrum (vermelho) -->
+    <circle cx="43.4" cy="156.6" r="7" fill="url(#ferrumGlow)">
+      <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="30s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- Núcleo central (Rimkópolis) -->
+  <circle cx="100" cy="100" r="22" fill="url(#coreGlow)" opacity="0.6"/>
+  <circle cx="100" cy="100" r="12" fill="#ffcc00" filter="url(#softGlow)"/>
+  <circle cx="100" cy="100" r="6" fill="#fff8cc"/>
+
+  <!-- Raio central (o "olho" do Códice) -->
+  <line x1="100" y1="88" x2="100" y2="70" stroke="#ffcc00" stroke-width="1.5" opacity="0.7"/>
+  <line x1="100" y1="112" x2="100" y2="130" stroke="#ffcc00" stroke-width="1.5" opacity="0.7"/>
+  <line x1="88" y1="100" x2="70" y2="100" stroke="#ffcc00" stroke-width="1.5" opacity="0.7"/>
+  <line x1="112" y1="100" x2="130" y2="100" stroke="#ffcc00" stroke-width="1.5" opacity="0.7"/>
+
+  <!-- Acentos nas pontas dos eixos -->
+  <g fill="#ffcc00" opacity="0.9">
+    <circle cx="100" cy="68" r="2.5"/>
+    <circle cx="100" cy="132" r="2.5"/>
+    <circle cx="68" cy="100" r="2.5"/>
+    <circle cx="132" cy="100" r="2.5"/>
+  </g>
+</svg>
