@@ -374,6 +374,32 @@ html, body { height: 100%; }
 .btn-yellow:hover { box-shadow: 0 0 22px rgba(153,255,0,.55); }
 .play-btn { box-shadow: 0 0 0 5px rgba(153,255,0,.12), 0 0 30px rgba(153,255,0,.5); }
 #auth-error { color: #FF6B7A; }
+/* Fundo: linhas de TV antiga em movimento (ficam atrás de todo o conteúdo) */
+body::before {
+    conten: '';
+    position: fixed; inset: 0;
+    z-index: -1; pointer-events: none;
+    background: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.16) 2px 3px);
+    background-size: 100% 3px;
+    animation: scanlines 6s linear infinite;
+}
+@keyframes scanlines {
+    from { background-position: 0 0; }
+    to   { background-position: 0 60px; }
+}
+
+/*Faixa de brilho que desce pela, como numa TV de tubo */
+body::after {
+    content: '';
+    position: fixed; left: 0; right: 0; top: 0; height: 18vh;
+    z-index: -1; pointer-events: none;
+    background: linear-gradient(to bottom, transparent, rgba(153,255,0,.07), transparent);
+    animation: scan-roll 7s linear infinite;
+}
+@keyframes scan-roll {
+    from { transform: translateY(-20vh); }
+    to   { transform: translateY(100vh); }
+}    
 /* Tela inicial: logo, barra "99%", globo wireframe e glifos */
 #auth-view { position: relative; }
 #auth-view > .panel { position: relative; z-index: 1; }
