@@ -98,7 +98,7 @@
 
     <main class="app-main flex-1 w-full max-w-[1800px] mx-auto p-4 flex flex-col z-10">
 
-        <!-- Login / criar sala + mini rádio (a rádio fica ao lado a partir de 1280px; abaixo disso, embaixo) -->
+        <!-- Login / criar sala à esquerda + planetas em órbita à direita (a partir de 1280px; abaixo disso, os planetas ficam embaixo) -->
         <div id="home-view" class="flex-1 flex flex-col xl:flex-row items-stretch justify-center gap-4">
 
         <!-- Login / cadastro -->
@@ -242,31 +242,34 @@
             </aside>
         </div>
 
-        <!-- Coluna lateral: mini rádio -->
-        <div id="side-col" class="side-col">
-            <!-- Mini rádio: lives de música do YouTube sorteadas por gênero (lógica em radio.js) -->
-            <aside id="radio-card" class="radio-card panel w-full flex flex-col" aria-label="Rádio RimkRadio">
-                <div class="radio-top">
-                    <span class="radio-tag">RIMK FM</span>
-                    <span id="radio-live" class="radio-live" hidden>AO VIVO</span>
+        <!-- Coluna da direita: sistema de planetas em órbita (só decoração) -->
+        <div id="orbit-col" class="orbit-col" aria-hidden="true">
+            <div class="orbit-stage">
+                <div class="orbit-glow"></div>
+
+                <!-- anéis das órbitas (parados) -->
+                <span class="orbit-ring" style="--d:22.5%"></span>
+                <span class="orbit-ring" style="--d:45%"></span>
+                <span class="orbit-ring" style="--d:67.5%"></span>
+                <span class="orbit-ring" style="--d:90%"></span>
+
+                <!-- sol -->
+                <span class="sun"></span>
+
+                <!-- planetas: --d = tamanho da órbita, --T = tempo de uma volta, --a = ângulo inicial (graus), --c = cor -->
+                <div class="orbit" style="--d:22.5%;--T:26s;--a:23;--c:#FF3860">
+                    <div class="planet-pos"><div class="planet"><img src="avatar/bg/ferrum.jpg" alt="" draggable="false"><span class="planet-name">Ferrum</span></div></div>
                 </div>
-                <div class="radio-video">
-                    <div id="radio-frame"></div>
-                    <button type="button" id="radio-gate" class="radio-gate" hidden></button>
-                    <p id="radio-msg" class="radio-msg" role="status" aria-live="polite" hidden></p>
+                <div class="orbit" style="--d:45%;--T:42s;--a:16;--c:#FFD60A">
+                    <div class="planet-pos"><div class="planet"><img src="avatar/bg/kaal7.jpg" alt="" draggable="false"><span class="planet-name">Kaal-7</span></div></div>
                 </div>
-                <div class="radio-now">
-                    <span id="radio-genre" class="radio-genre">Rádio</span>
-                    <span id="radio-title" class="radio-title">Sintonizando…</span>
+                <div class="orbit" style="--d:67.5%;--T:64s;--a:77;--c:#99FF00">
+                    <div class="planet-pos"><div class="planet"><img src="avatar/bg/rimkopolis.jpg" alt="" draggable="false"><span class="planet-name">Rimkópolis</span></div></div>
                 </div>
-                <div class="radio-ctrl">
-                    <button type="button" id="radio-toggle" class="icon-btn" aria-label="Pausar rádio" title="Pausar"><i class="fa-solid fa-pause"></i></button>
-                    <button type="button" id="radio-mute" class="icon-btn" aria-label="Ligar o som da rádio" title="Ligar o som" aria-pressed="true"><i class="fa-solid fa-volume-xmark"></i></button>
-                    <input type="range" id="radio-vol" class="radio-vol" min="0" max="100" step="5" value="60" aria-label="Volume da rádio">
-                    <button type="button" id="radio-next" class="icon-btn" aria-label="Outra rádio" title="Outra rádio"><i class="fa-solid fa-shuffle"></i></button>
+                <div class="orbit" style="--d:90%;--T:92s;--a:152;--c:#2BFF3C">
+                    <div class="planet-pos"><div class="planet"><img src="avatar/bg/nereid.jpg" alt="" draggable="false"><span class="planet-name">Nereida</span></div></div>
                 </div>
-                <div id="radio-chips" class="radio-chips" role="group" aria-label="Estilo da rádio"></div>
-            </aside>
+            </div>
         </div>
 
         </div>
@@ -472,7 +475,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script src="avatar.js"></script>
-    <script src="script.js"></script>
     <script src="radio.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

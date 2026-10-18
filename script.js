@@ -933,6 +933,7 @@
                 $('room-name-input').value = ''; $('room-password-input').value = '';
                 enterRoomUI();
                 publishListing();
+                if (createCat === 'musica') startAutoRadio(id);   // sala de música nova já começa tocando uma live
                 return;
             } catch (e) {
                 console.error(e);
@@ -1010,6 +1011,7 @@
         try { store.leave(); } catch (e) {}
         if (unsubRoom) unsubRoom(); if (unsubChat) unsubChat(); if (unsubPresence) unsubPresence(); if (leavePresence) leavePresence();
         unsubRoom = unsubChat = unsubPresence = leavePresence = null; knownUsers = null;
+        autoRadio = null;
         currentRoomId = null; currentRoomName = ''; replyingTo = null; chatView = []; pendingData = null; seenMsgs = new Set(); chatSoundArmed = false;
         if (myListing) { myListing = null; try { if (store.dir) store.dir.publish(null); } catch (e) {} }
         lastRoom = { playlist: [], currentIndex: 0, isPlaying: false, currentTime: 0, playbackUpdated: 0 };
@@ -1716,9 +1718,48 @@
         lastPoll = { t, at: now };
     }, 500);
 
+    /* ---------- Rádio automática ----------
+       Sala de MÚSICA recém-criada já começa tocando uma live sorteada da lista do radio.js (window.RimkLives).
+       Só quem criou a sala faz isso (autoRadio fica nulo nos outros aparelhos). Lives caem de vez em quando:
+       se a sorteada não abrir, tenta outra, até AUTO_RADIO_MAX no total. */
+    const AUTO_RADIO_MAX = 5;
+    let autoRadio = null;   // { roomId, tried: [videoId, ...] }
+    const radioSong = (pick) => ({ id: Math.random().toString(16).slice(2), videoId: pick.videoId, title: pick.title, requester: clientUsername, live: true });
+
+    async function startAutoRadio(roomId) {
+        const pick = window.RimkLives && window.RimkLives.random();
+        if (!pick) return;
+        autoRadio = { roomId, tried: [pick.videoId] };
+        try {
+            await store.updateRoom(roomId, 'add', { song: radioSong(pick) });
+            if (currentRoomId !== roomId) return;   // saiu da sala nesse meio tempo
+            await store.updateRoom(roomId, 'playback', { isPlaying: true, currentTime: 0 });
+            store.addChat(roomId, { id: Math.random().toString(16).slice(2, 12), system: true, user: '', text: `A sala começou tocando uma rádio ao vivo: “${clip(pick.title, 70)}” (${pick.genreLabel})`, time: Date.now() }).catch(() => {});
+        } catch (e) { console.error(e); autoRadio = null; }
+    }
+
+    async function nextAutoRadio() {
+        const roomId = currentRoomId;
+        const pick = autoRadio && autoRadio.tried.length < AUTO_RADIO_MAX && window.RimkLives && window.RimkLives.random(autoRadio.tried);
+        if (!pick) {
+            autoRadio = null;
+            return showNotification('Não consegui abrir uma rádio ao vivo agora. Adicione uma música na playlist.', 'error');
+        }
+        autoRadio.tried.push(pick.videoId);
+        showNotification('Essa live não abriu — sorteando outra rádio.', 'info');
+        const idx = (lastRoom.playlist || []).length;   // posição onde a nova live vai entrar
+        try {
+            await store.updateRoom(roomId, 'add', { song: radioSong(pick) });
+            await store.updateRoom(roomId, 'jump', { idx });
+        } catch (e) { console.error(e); }
+    }
+
     // Vídeo bloqueado para incorporação (comum em clipes oficiais): avisa e pula para a próxima
     let errorStreak = 0;
     function onPlayerError() {
+        // a live sorteada quando a sala foi criada não abriu (caiu, bloqueada...): sorteia outra
+        const failing = (lastRoom.playlist || [])[lastRoom.currentIndex || 0];
+        if (autoRadio && autoRadio.roomId === currentRoomId && failing && autoRadio.tried.includes(failing.videoId)) return nextAutoRadio();
         errorStreak++;
         const idx = lastRoom.currentIndex;
         const total = (lastRoom.playlist || []).length;

@@ -376,7 +376,7 @@ html, body { height: 100%; }
 #auth-error { color: #FF6B7A; }
 /* Fundo: linhas de TV antiga em movimento (ficam atrás de todo o conteúdo) */
 body::before {
-    conten: '';
+    content: '';
     position: fixed; inset: 0;
     z-index: -1; pointer-events: none;
     background: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.16) 2px 3px);
@@ -458,59 +458,13 @@ body::after {
 #notification-modal { z-index: 95 !important; }
 
 /* ============================================================
-   MINI RÁDIO (RIMK FM) nas telas de login e criar sala
+   TELA INICIAL: a tela rola quando a janela é pequena (só fora da sala)
    ============================================================ */
 /* Abaixo de 1280px a rádio vai para baixo dos painéis: deixa a tela rolar (só fora da sala). */
 @media (min-width: 1024px) {
     .app-main:has(#room-view.hidden) { overflow-y: auto; }
 }
 
-.radio-card { position: relative; z-index: 1; padding: .85rem; gap: .65rem; }
-.radio-card::before, .radio-card::after { content:''; position:absolute; width:16px; height:16px; border:0 solid var(--blue); pointer-events:none; }
-.radio-card::before { top:6px; left:6px; border-width:2px 0 0 2px; }
-.radio-card::after { bottom:6px; right:6px; border-width:0 2px 2px 0; }
-
-.radio-top { display:flex; align-items:center; justify-content:space-between; gap:.5rem; padding:0 .25rem; }
-.radio-tag { font-family:'VT323', monospace; font-size:1.25rem; line-height:1; letter-spacing:.14em; color:var(--blue); text-shadow:0 0 8px rgba(153,255,0,.6); }
-.radio-live { display:inline-flex; align-items:center; gap:.35rem; font-size:.65rem; font-weight:800; letter-spacing:.1em; color:#FF3860; border:1px solid #FF3860; border-radius:3px; padding:0 .4rem; line-height:1.15rem; }
-.radio-live::before { content:''; width:6px; height:6px; border-radius:50%; background:#FF3860; animation: radio-blink 1.4s steps(2) infinite; }
-@keyframes radio-blink { 50% { opacity:.2; } }
-.radio-live[hidden], .radio-gate[hidden], .radio-msg[hidden] { display:none; }
-
-/* Vídeo: 200px de altura (mínimo exigido pelo YouTube para o player embutido) */
-.radio-video { position:relative; height:200px; background:#000; border:1px solid var(--edge); border-radius:4px; overflow:hidden; }
-.radio-video #radio-frame, .radio-video iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
-.radio-gate {
-    position:absolute; left:50%; bottom:10px; transform:translateX(-50%); z-index:2; white-space:nowrap;
-    font-family:'VT323', monospace; font-size:1.2rem; line-height:1; letter-spacing:.08em; cursor:pointer;
-    padding:.4rem .9rem; color:#050605; background:var(--blue); border:2px solid var(--blue); border-radius:4px;
-    box-shadow:0 0 18px rgba(153,255,0,.55); animation: radio-pulse 1.6s ease-in-out infinite;
-}
-.radio-gate:hover { background:#fff; border-color:#fff; }
-@keyframes radio-pulse { 50% { box-shadow:0 0 6px rgba(153,255,0,.25); } }
-.radio-msg {
-    position:absolute; inset:0; z-index:1; display:flex; align-items:center; justify-content:center; text-align:center;
-    padding:1rem 1rem 3.2rem; font-size:.8rem; line-height:1.4; color:#C3CBBE; background:rgba(3,5,3,.92);
-}
-
-.radio-now { display:flex; align-items:center; gap:.5rem; min-width:0; padding:0 .25rem; }
-.radio-genre { flex:none; font-family:'VT323', monospace; font-size:1.05rem; line-height:1; letter-spacing:.1em; text-transform:uppercase; color:#050605; background:var(--blue); padding:.1rem .45rem; border-radius:3px; }
-.radio-title { min-width:0; flex:1; font-size:.8rem; color:#C3CBBE; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-
-.radio-ctrl { display:flex; align-items:center; gap:.5rem; padding:0 .25rem; }
-.radio-ctrl .icon-btn { width:2.25rem; height:2.25rem; flex:none; font-size:.85rem; }
-.radio-vol { flex:1; min-width:0; accent-color:var(--blue); cursor:pointer; }
-
-.radio-chips { display:flex; flex-wrap:wrap; gap:.35rem; padding:0 .25rem .1rem; }
-.radio-chip {
-    font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; cursor:pointer;
-    padding:.3rem .6rem; border:1px solid var(--edge); border-radius:4px; color:#8E9A88; background:rgba(3,6,3,.6);
-    transition: color .2s, border-color .2s, background .2s;
-}
-.radio-chip:hover { color:#fff; border-color:var(--blue); }
-.radio-chip[aria-pressed="true"] { color:#fff; border-color:var(--blue); background:rgba(153,255,0,.16); box-shadow:inset 0 0 0 1px var(--blue); }
-.radio-chip:focus-visible, .radio-gate:focus-visible { outline:2px solid var(--yellow); outline-offset:2px; }
-@media (prefers-reduced-motion: reduce) { .radio-gate, .radio-live::before { animation:none; } }
 
 /* ============================================================
    CARD "RIMKERAMA" (canto superior direito do cabeçalho; só aparece no login e na criação de sala)
@@ -551,21 +505,83 @@ body:has(#room-view:not(.hidden)) .site-card { display: none; }
 
 
 /* ============================================================
-   TELA INICIAL (criar sala | salas abertas | rádio)
-   Tudo alinhado pelo topo, painéis com a mesma altura.
+   TELA INICIAL (criar sala | salas abertas  ...  planetas em órbita)
+   Conteúdo à esquerda, sistema de planetas à direita (a partir de 1280px).
    ============================================================ */
 #home-view { align-items: center; justify-content: flex-start; gap: 1.5rem; padding-top: clamp(.5rem, 3vh, 2rem); }
 #home-view > #auth-view, #home-view > #setup-view { flex: 1 1 0; min-width: 0; }
 #auth-view { padding-block: 0; }
+/* dentro de uma sala a tela inicial inteira some (qualquer caminho que abra a sala) */
+.app-main:has(#room-view:not(.hidden)) #home-view { display: none !important; }
 @media (min-width: 1280px) {
-    #home-view { flex-direction: row; align-items: flex-start; justify-content: center; flex-wrap: nowrap; max-width: 1280px; margin: 0 auto; width: 100%; }
-    #auth-view { align-self: stretch; align-items: flex-start; justify-content: center; }
+    #home-view { flex-direction: row; align-items: center; justify-content: flex-start; flex-wrap: nowrap; gap: 2rem; max-width: 1560px; margin: 0 auto; width: 100%; }
+    #home-view > #auth-view, #home-view > #setup-view { flex: 1 1 52rem; max-width: 62rem; }
+    #auth-view { align-self: stretch; align-items: center; justify-content: flex-start; }
 }
 
-/* Coluna lateral: só a mini rádio (o ranking agora fica dentro de cada sala) */
-.side-col { position: relative; z-index: 1; width: 100%; max-width: 28rem; display: flex; flex-direction: column; gap: 1rem; }
-.side-col > .panel { width: 100%; }
-@media (min-width: 1280px) { .side-col { width: 20rem; max-width: none; flex: none; } }
+/* ---------- Sistema de planetas em órbita ----------
+   O palco é um quadrado que escala com a largura da coluna (tudo em %/cqw).
+   As voltas usam só transform: rotate (roda na placa de vídeo, sem engasgar).
+   Cada planeta gira junto com a órbita e contra-gira em volta de si mesmo, para a imagem e o nome ficarem sempre em pé. */
+.orbit-col { position: relative; z-index: 1; width: 100%; max-width: 36rem; margin-inline: auto; flex: none; }
+@media (min-width: 1280px) { .orbit-col { flex: 1 1 28rem; max-width: none; min-width: 0; margin: 0; } }
+
+.orbit-stage {
+    position: relative; width: min(100%, 78dvh); aspect-ratio: 1; margin-inline: auto;
+    container-type: inline-size; user-select: none;
+}
+.orbit-glow { position: absolute; inset: 4%; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(closest-side, rgba(255,196,0,.10), rgba(153,255,0,.05) 55%, transparent 100%); }
+
+.orbit-ring {
+    position: absolute; left: 50%; top: 50%; width: var(--d); aspect-ratio: 1; translate: -50% -50%;
+    border: 1px dashed rgba(153,255,0,.16); border-radius: 50%; pointer-events: none;
+}
+
+.sun {
+    position: absolute; left: 50%; top: 50%; width: 7.8cqw; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, #FFF3A8 0%, #FFD21A 38%, #FFA800 100%);
+    box-shadow: 0 0 2.4cqw .6cqw rgba(255,190,0,.55), 0 0 7cqw 1.6cqw rgba(255,160,0,.25);
+    animation: sun-pulse 5s ease-in-out infinite; will-change: transform;
+}
+@keyframes sun-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+
+/* a órbita é só uma "haste" que gira; o planeta fica pendurado no topo dela */
+.orbit {
+    position: absolute; left: 50%; top: 50%; width: var(--d); aspect-ratio: 1; translate: -50% -50%;
+    pointer-events: none; will-change: transform;
+    animation: orbit-spin var(--T) linear infinite;
+    animation-delay: calc(var(--T) * var(--a) / -360);
+}
+.planet-pos { position: absolute; left: 50%; top: 0; translate: -50% -50%; width: 8.3cqw; height: 8.3cqw; pointer-events: none; }
+.planet {
+    position: relative; width: 100%; height: 100%; pointer-events: auto; cursor: default;
+    animation: orbit-spin var(--T) linear infinite reverse;
+    animation-delay: calc(var(--T) * var(--a) / -360);
+    will-change: transform;
+}
+.planet img {
+    display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
+    border: max(2px, .42cqw) solid var(--c);
+    box-shadow: 0 0 1.6cqw var(--c), 0 0 .5cqw var(--c), inset 0 0 1cqw rgba(0,0,0,.55);
+    transition: transform .25s ease, box-shadow .25s ease;
+}
+.planet-name {
+    position: absolute; left: 50%; top: calc(100% + .7cqw); translate: -50% 0; white-space: nowrap;
+    font-family: 'Courier New', monospace; font-weight: 700; font-size: clamp(8px, 1.35cqw, 12px);
+    letter-spacing: .14em; text-transform: uppercase; color: var(--c); text-shadow: 0 0 .8cqw var(--c);
+}
+/* passar o mouse num planeta: ele para e cresce um pouco */
+.orbit:has(.planet:hover), .orbit:has(.planet:hover) .planet { animation-play-state: paused; }
+.planet:hover img { transform: scale(1.12); box-shadow: 0 0 2.6cqw var(--c), 0 0 .8cqw var(--c), inset 0 0 1cqw rgba(0,0,0,.55); }
+
+@keyframes orbit-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* sem animação (preferência do sistema): planetas parados nas posições iniciais */
+@media (prefers-reduced-motion: reduce) {
+    .orbit  { transform: rotate(calc(var(--a) * 1deg)); }
+    .planet { transform: rotate(calc(var(--a) * -1deg)); }
+}
 
 #setup-view { padding-block: 0; display: grid; gap: 1.5rem; align-items: stretch; justify-items: center; align-content: start; }
 #setup-view.hidden { display: none; }
