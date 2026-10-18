@@ -374,9 +374,6 @@ html, body { height: 100%; }
 .btn-yellow:hover { box-shadow: 0 0 22px rgba(153,255,0,.55); }
 .play-btn { box-shadow: 0 0 0 5px rgba(153,255,0,.12), 0 0 30px rgba(153,255,0,.5); }
 #auth-error { color: #FF6B7A; }
-body::after { content:''; position: fixed; inset: 0; pointer-events: none; z-index: 70;
-  background: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.16) 2px 3px); }
-
 /* Tela inicial: logo, barra "99%", globo wireframe e glifos */
 #auth-view { position: relative; }
 #auth-view > .panel { position: relative; z-index: 1; }
