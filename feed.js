@@ -19,18 +19,19 @@
   .f-tabs{display:flex;gap:6px;padding:0 18px 10px;align-items:center}
   .f-tab{background:none;border:1px solid #1f2b1c;color:#7f8a7a;padding:4px 12px;border-radius:99px;cursor:pointer;font:13px 'Exo 2'}
   .f-tab.on{color:#000;background:var(--cat,#99FF00);border-color:var(--cat,#99FF00)}
-  .f-hint{margin-left:auto;color:#7f8a7a;font-size:12px}
-  #feed-grid{flex:1;overflow:auto;padding:0 18px 40px;columns:2 300px;column-gap:14px}
-  .f-card{break-inside:avoid;background:color-mix(in srgb,var(--cat,#99FF00) 7%,#0d1210);border:1px solid color-mix(in srgb,var(--cat,#99FF00) 30%,#0d1210);border-radius:12px;margin:0 0 14px;overflow:hidden;transition:border-color .4s,background .4s}
+  .f-hint{color:#7f8a7a;font-size:12px}
+  #feed-grid{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:0 18px 40px;width:100%;max-width:1500px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,var(--fw,320px)),1fr));gap:14px;align-content:start}
+  .f-card{display:flex;flex-direction:column;min-width:0;align-self:start;background:color-mix(in srgb,var(--cat,#99FF00) 7%,#0d1210);border:1px solid color-mix(in srgb,var(--cat,#99FF00) 30%,#0d1210);border-radius:12px;overflow:hidden;transition:border-color .4s,background .4s}
   .f-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;font:16px 'VT323',monospace;color:var(--cat,#99FF00);border-bottom:1px solid color-mix(in srgb,var(--cat,#99FF00) 25%,#0d1210)}
   .f-bar em{font-style:normal;color:#7f8a7a;font-size:14px;margin-left:auto}
   .f-bar button{background:none;border:0;color:#7f8a7a;cursor:pointer}.f-bar button:hover{color:#FF3860}
-  .f-body{padding:8px;display:flex;justify-content:center}
+  .f-body{position:relative;padding:8px;display:flex;justify-content:center;max-height:var(--fh,420px);overflow:hidden}.f-card.exp .f-body{max-height:none}.f-card.big:not(.exp) .f-body::after{content:'';position:absolute;left:0;right:0;bottom:0;height:70px;background:linear-gradient(transparent,#0d1210);pointer-events:none}
   .f-body img,.f-body video{max-width:100%;border-radius:8px;display:block}
   .f-body iframe{width:100%;border:0;border-radius:8px;aspect-ratio:16/9}
-  .f-body iframe.tall{aspect-ratio:9/16;max-height:560px;width:auto;min-width:260px}
+  .f-body iframe.tall{aspect-ratio:9/16;max-height:calc(var(--fh,420px) - 16px);width:auto;min-width:0;max-width:100%}
   .f-link{display:block;padding:14px;color:#e8e8e3;text-decoration:none;word-break:break-all}.f-link b{color:var(--cat,#99FF00)}
-  .f-empty{color:#7f8a7a;text-align:center;padding:50px 10px;column-span:all}`;
+  .f-empty{color:#7f8a7a;text-align:center;padding:50px 10px;grid-column:1/-1}.f-more{display:none;background:none;border:0;border-top:1px solid color-mix(in srgb,var(--cat,#99FF00) 25%,#0d1210);color:var(--cat,#99FF00);font:600 12px 'Exo 2',sans-serif;padding:7px;cursor:pointer}.f-card.big .f-more{display:block}.f-more:hover{background:color-mix(in srgb,var(--cat,#99FF00) 14%,transparent)}.f-sizes{display:flex;gap:4px;margin-left:auto}.f-hint{margin-left:12px!important}
+`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
   const root = document.createElement('div');
@@ -38,7 +39,7 @@
   <section id="feed-panel" aria-label="Feed da sala">
     <div class="f-top"><input id="feed-url" placeholder="Cole um link: X, YouTube, Instagram, TikTok, imagem ou vídeo…" autocomplete="off">
       <button class="f-btn" id="feed-add" type="button">Postar</button><button class="f-btn" id="feed-hide" type="button">Fechar ✕</button></div>
-    <div class="f-tabs"><button class="f-tab on" data-f="all">Tudo</button><button class="f-tab" data-f="video">Vídeos</button><button class="f-tab" data-f="img">Fotos/memes</button><span class="f-hint">O feed some quando a sala fecha</span></div>
+    <div class="f-tabs"><button class="f-tab on" data-f="all">Tudo</button><button class="f-tab" data-f="video">Vídeos</button><button class="f-tab" data-f="img">Fotos/memes</button><span class="f-sizes" title="Tamanho dos cards"><button class="f-tab" data-s="S">P</button><button class="f-tab on" data-s="M">M</button><button class="f-tab" data-s="G">G</button></span><span class="f-hint">O feed some quando a sala fecha</span></div>
     <div id="feed-grid"></div></section>`;
   while (root.firstChild) document.body.appendChild(root.firstChild);
 
@@ -67,13 +68,16 @@
     const card = document.createElement('div');
     card.className = 'f-card'; card.dataset.id = row.id; card.dataset.kind = it.kind;
     const can = api && api.canRemove(row);
-    card.innerHTML = `<div class="f-bar"><span>${esc(it.label)}</span><em>${esc(row.user_name || '')}</em>${can ? '<button title="Remover">✕</button>' : ''}</div><div class="f-body"></div>`;
+    card.innerHTML = `<div class="f-bar"><span>${esc(it.label)}</span><em>${esc(row.user_name || '')}</em>${can ? '<button title="Remover">✕</button>' : ''}</div><div class="f-body"></div><button class="f-more" type="button">Ver tudo ▾</button>`;
+    const more = card.querySelector('.f-more');
+    more.onclick = () => { const e = card.classList.toggle('exp'); more.textContent = e ? 'Recolher ▴' : 'Ver tudo ▾'; };
     const b = card.querySelector('button'); if (b) b.onclick = () => api.remove(row.id).catch(() => {});
     const body = card.querySelector('.f-body');
+    const chk = () => card.classList.toggle('big', card.classList.contains('exp') || body.scrollHeight > body.clientHeight + 6);
     $('feed-grid').prepend(card); aplicar();
     const fb = () => { body.innerHTML = `<a class="f-link" target="_blank" rel="noopener noreferrer" href="${esc(row.url)}">Abrir <b>${esc(row.url)}</b></a>`; };
     try {
-      if (it.type === 'x') { await loadScript('https://platform.twitter.com/widgets.js'); const el = await twttr.widgets.createTweet(it.id, body, { theme: 'dark', dnt: true, conversation: 'none' }); if (!el) fb(); }
+      if (it.type === 'x') { await loadScript('https://platform.twitter.com/widgets.js'); const el = await twttr.widgets.createTweet(it.id, body, { theme: 'dark', dnt: true, conversation: 'none', width: Math.max(250, Math.min(550, body.clientWidth - 16)) }); if (!el) fb(); else if (window.ResizeObserver) new ResizeObserver(chk).observe(el); }
       else if (it.type === 'yt') body.innerHTML = `<iframe class="${it.short ? 'tall' : ''}" src="https://www.youtube.com/embed/${it.id}" allow="encrypted-media;picture-in-picture;fullscreen" allowfullscreen loading="lazy"></iframe>`;
       else if (it.type === 'tt') body.innerHTML = `<iframe class="tall" src="https://www.tiktok.com/embed/v2/${it.id}" allowfullscreen loading="lazy"></iframe>`;
       else if (it.type === 'ig') { body.innerHTML = `<blockquote class="instagram-media" data-instgrm-permalink="${esc(it.href)}" style="width:100%;margin:0"></blockquote>`; await loadScript('https://www.instagram.com/embed.js'); window.instgrm && instgrm.Embeds.process(); }
@@ -81,6 +85,7 @@
       else if (it.type === 'vid') { body.innerHTML = `<video src="${esc(row.url)}" controls playsinline preload="metadata"></video>`; body.firstChild.onerror = fb; }
       else fb();
     } catch (e) { fb(); }
+    chk(); setTimeout(chk, 1500); setTimeout(chk, 4000);
   }
 
   function aplicar() { document.querySelectorAll('.f-card').forEach(c => { c.style.display = (filtro === 'all' || c.dataset.kind === filtro) ? '' : 'none'; }); }
@@ -101,6 +106,17 @@
   }
   function del(id) { if (!items.delete(id)) return; const c = $('feed-grid').querySelector(`.f-card[data-id="${id}"]`); if (c) c.remove(); vazio(); }
 
+  const SIZES = { S: [240, 300], M: [320, 420], G: [480, 620] };
+  function setSize(k, redraw) {
+    const [w, h] = SIZES[k] || SIZES.M, p = $('feed-panel');
+    p.style.setProperty('--fw', w + 'px'); p.style.setProperty('--fh', h + 'px');
+    document.querySelectorAll('.f-sizes .f-tab').forEach(b => b.classList.toggle('on', b.dataset.s === k));
+    try { localStorage.setItem('rimkFeedSize', k); } catch (e) {}
+    if (redraw && items.size) { $('feed-grid').innerHTML = ''; [...items.values()].forEach(draw); }
+  }
+  document.querySelectorAll('.f-sizes .f-tab').forEach(b => b.onclick = () => setSize(b.dataset.s, true));
+  { let k = 'M'; try { k = localStorage.getItem('rimkFeedSize') || 'M'; } catch (e) {} setSize(k, false); }
+
   function open(v) { document.body.classList.toggle('feed-open', v); if (v) { unseen = 0; vazio(); } }
   $('feed-handle').onclick = () => open(!document.body.classList.contains('feed-open'));
   $('feed-hide').onclick = () => open(false);
@@ -115,7 +131,7 @@
     }
   };
   $('feed-url').addEventListener('keydown', e => { if (e.key === 'Enter') $('feed-add').click(); });
-  document.querySelectorAll('.f-tab').forEach(b => b.onclick = () => { document.querySelectorAll('.f-tab').forEach(x => x.classList.remove('on')); b.classList.add('on'); filtro = b.dataset.f; aplicar(); });
+  document.querySelectorAll('.f-tab[data-f]').forEach(b => b.onclick = () => { document.querySelectorAll('.f-tab[data-f]').forEach(x => x.classList.remove('on')); b.classList.add('on'); filtro = b.dataset.f; aplicar(); });
 
   window.RimkFeed = {
     // entra na sala: api = { list(), add(url), remove(id), uid(), canRemove(row) }; sem api (P2P/local) o botão nem aparece
