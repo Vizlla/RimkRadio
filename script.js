@@ -1009,7 +1009,7 @@
         if (unsubRoom) unsubRoom();
         if (unsubChat) unsubChat();
         unsubRoom = store.subscribeRoom(currentRoomId, onRoomData);
-        if (window.RimkFeed) { const rid = currentRoomId, f = store.feed; RimkFeed.enter(f ? { list: () => f.list(rid), add: (u) => f.add(rid, u), remove: f.remove, uid: f.uid, canRemove: f.canRemove } : null); }
+        if (window.RimkFeed) { const rid = currentRoomId, f = store.feed; RimkFeed.enter(f ? { list: () => f.list(rid), add: (u) => f.add(rid, u), remove: f.remove, uid: f.uid, canRemove: f.canRemove, color: (n) => userColors.get(n) || nameColor(n), avatar: (n) => avBubble(n, 'chat-avatar') } : null); }
         unsubChat = store.subscribeChat(currentRoomId, renderChat);
 
         if (unsubPresence) unsubPresence();
