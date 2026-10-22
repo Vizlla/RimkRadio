@@ -4,12 +4,12 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const $ = id => document.getElementById(id);
   const css = `
-  #feed-handle{position:fixed;top:0;left:50%;transform:translate(-50%,-72%);z-index:70;display:none;background:#0d1210;color:var(--cat,#99FF00);border:1px solid var(--cat,#99FF00);border-top:0;border-radius:0 0 14px 14px;padding:14px 22px 6px;font:20px 'VT323',monospace;letter-spacing:2px;cursor:pointer;opacity:.35;transition:transform .25s,opacity .25s,color .4s,border-color .4s}
+  #feed-handle{position:fixed;top:0;left:50%;transform:translate(-50%,-72%);z-index:74;display:none;background:#0d1210;color:var(--cat,#99FF00);border:1px solid var(--cat,#99FF00);border-top:0;border-radius:0 0 14px 14px;padding:14px 22px 6px;font:20px 'VT323',monospace;letter-spacing:2px;cursor:pointer;opacity:.35;transition:transform .25s,opacity .25s,color .4s,border-color .4s}
   #feed-handle.on{display:block}
   #feed-handle:hover,body.feed-open #feed-handle,#feed-handle.new{transform:translate(-50%,0);opacity:1}
   #feed-badge{background:var(--cat,#99FF00);color:#000;border-radius:10px;padding:0 7px;margin-left:6px;font-size:16px}
   #feed-badge:empty{display:none}
-  #feed-panel{position:fixed;inset:0 0 auto 0;height:86%;z-index:69;display:flex;flex-direction:column;background:rgba(7,9,10,.97);backdrop-filter:blur(8px);border-bottom:2px solid var(--cat,#99FF00);box-shadow:0 12px 50px color-mix(in srgb,var(--cat,#99FF00) 28%,#000);transform:translateY(-104%);transition:transform .35s cubic-bezier(.2,.8,.2,1),border-color .4s,box-shadow .4s;visibility:hidden}
+  #feed-panel{position:fixed;inset:0 0 auto 0;height:86%;z-index:73;display:flex;flex-direction:column;background:rgba(7,9,10,.97);backdrop-filter:blur(8px);border-bottom:2px solid var(--cat,#99FF00);box-shadow:0 12px 50px color-mix(in srgb,var(--cat,#99FF00) 28%,#000);transform:translateY(-104%);transition:transform .35s cubic-bezier(.2,.8,.2,1),border-color .4s,box-shadow .4s;visibility:hidden}
   body.feed-open #feed-panel{transform:none;visibility:visible}
   #feed-panel .f-top{display:flex;gap:8px;padding:18px 18px 10px;flex-wrap:wrap}
   #feed-panel input{flex:1;min-width:200px;background:#000;border:1px solid #1f2b1c;color:#e8e8e3;padding:10px 12px;border-radius:8px;font:14px 'Exo 2',sans-serif;outline:none}
