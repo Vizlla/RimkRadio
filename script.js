@@ -628,6 +628,13 @@
                 const m = cleanMsg({ ...b, id: b.id || String(r.id), user: b.system === true ? '' : r.user_name, time: Date.now() });
                 if (m) { chat = [...chat, m].slice(-200); emitChat(); }
             });
+            ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'room_feed', filter: `room_id=eq.${id}` }, (p) => {
+                try { if (roomId === id && window.RimkFeed) RimkFeed.push({ k: 'add', row: p.new }); } catch (e) { console.error(e); }
+            });
+            // DELETE não aceita filtro: o feed ignora ids que não são dele
+            ch.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'room_feed' }, (p) => {
+                try { if (roomId === id && window.RimkFeed && p.old) RimkFeed.push({ k: 'del', id: p.old.id }); } catch (e) { console.error(e); }
+            });
             ch.on('presence', { event: 'sync' }, () => {
                 const st = ch.presenceState();
                 users = Object.entries(st).map(([uid, metas]) => {
@@ -713,6 +720,19 @@
             if (!channel) return;
             try { channel.send({ type: 'broadcast', event: 'react', payload: { k: kind === 'down' ? 'down' : 'up', by: clip(clientUsername, 30) } }).catch?.(() => {}); } catch (e) {}
         };
+        // Feed da sala (tabela room_feed + funções feed_add / feed_remove: rode supabase-feed.sql)
+        store.feed = {
+            list: async (id) => {
+                const { data, error } = await sb.from('room_feed').select('id,user_id,user_name,url,created_at').eq('room_id', id).order('created_at', { ascending: true }).limit(100);
+                if (error) throw error;
+                return data || [];
+            },
+            add: async (id, url) => { const { error } = await sb.rpc('feed_add', { p_room: id, p_url: url }); if (error) throw error; },
+            remove: async (rowId) => { const { error } = await sb.rpc('feed_remove', { p_id: rowId }); if (error) throw error; },
+            uid: () => myUid(),
+            canRemove: (r) => r.user_id === myUid() || store.isAdmin()
+        };
+
         store.getRoom = async (id, pass) => {
             const { data, error } = await sb.rpc('join_room', { p_id: id, p_pass: pass || null });
             if (error) {
@@ -989,6 +1009,7 @@
         if (unsubRoom) unsubRoom();
         if (unsubChat) unsubChat();
         unsubRoom = store.subscribeRoom(currentRoomId, onRoomData);
+        if (window.RimkFeed) { const rid = currentRoomId, f = store.feed; RimkFeed.enter(f ? { list: () => f.list(rid), add: (u) => f.add(rid, u), remove: f.remove, uid: f.uid, canRemove: f.canRemove } : null); }
         unsubChat = store.subscribeChat(currentRoomId, renderChat);
 
         if (unsubPresence) unsubPresence();
@@ -1008,6 +1029,7 @@
 
     // Volta para a tela inicial (sair da sala, ser expulso ou fazer logout)
     function leaveRoomUI() {
+        try { if (window.RimkFeed) RimkFeed.leave(); } catch (e) {}
         try { store.leave(); } catch (e) {}
         if (unsubRoom) unsubRoom(); if (unsubChat) unsubChat(); if (unsubPresence) unsubPresence(); if (leavePresence) leavePresence();
         unsubRoom = unsubChat = unsubPresence = leavePresence = null; knownUsers = null;
