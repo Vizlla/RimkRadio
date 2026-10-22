@@ -182,8 +182,20 @@
             tone(c, { type: 'sine', f0: 110, f1: 70, t: t + 0.14, dur: 0.34, peak: 0.05, attack: 0.012, dest: master });
         }
 
+        // post novo no feed: "scan" curto subindo + dois brilhos (mesma família do join/chat, bem discreto)
+        let lastFeed = 0;
+        function feed() {
+            const c = ready(); if (!c) return;
+            const now = Date.now(); if (now - lastFeed < 400) return; lastFeed = now;
+            const t = c.currentTime + 0.01;
+            const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3800; lp.connect(master);
+            tone(c, { type: 'sine', f0: 330, f1: 880, t, dur: 0.2, peak: 0.06, attack: 0.01, dest: lp });
+            tone(c, { type: 'triangle', f0: 1318, f1: 1350, t: t + 0.14, dur: 0.16, peak: 0.05, attack: 0.008, wet: 0.5, dest: lp });
+            tone(c, { type: 'triangle', f0: 1976, f1: 2010, t: t + 0.22, dur: 0.24, peak: 0.04, attack: 0.008, wet: 0.65, dest: lp });
+        }
+
         return {
-            join, chat, like, dislike,
+            join, chat, like, dislike, feed,
             isOn: () => on,
             set(v) { on = !!v; try { localStorage.setItem(KEY, on ? 'on' : 'off'); } catch (e) {} if (on) unlock(); }
         };
@@ -1009,7 +1021,7 @@
         if (unsubRoom) unsubRoom();
         if (unsubChat) unsubChat();
         unsubRoom = store.subscribeRoom(currentRoomId, onRoomData);
-        if (window.RimkFeed) { const rid = currentRoomId, f = store.feed; RimkFeed.enter(f ? { list: () => f.list(rid), add: (u) => f.add(rid, u), remove: f.remove, uid: f.uid, canRemove: f.canRemove, color: (n) => userColors.get(n) || nameColor(n), avatar: (n) => avBubble(n, 'chat-avatar') } : null); }
+        if (window.RimkFeed) { const rid = currentRoomId, f = store.feed; RimkFeed.enter(f ? { list: () => f.list(rid), add: (u) => f.add(rid, u), remove: f.remove, uid: f.uid, canRemove: f.canRemove, color: (n) => userColors.get(n) || nameColor(n), avatar: (n) => avBubble(n, 'chat-avatar'), sound: () => sfx.feed() } : null); }
         unsubChat = store.subscribeChat(currentRoomId, renderChat);
 
         if (unsubPresence) unsubPresence();

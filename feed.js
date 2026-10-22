@@ -46,7 +46,6 @@
   root.innerHTML = `<button id="feed-handle" type="button" title="Feed da sala">FEED<span id="feed-badge"></span></button>
   <aside id="feed-panel" aria-label="Feed da sala">
     <div class="f-head"><span>FEED DA SALA</span><button id="feed-hide" type="button" aria-label="Fechar">✕</button></div>
-    <div class="f-tabs"><button class="f-tab on" data-f="all">Tudo</button><button class="f-tab" data-f="video">Vídeos</button><button class="f-tab" data-f="img">Fotos/memes</button></div>
     <div id="feed-list"><div id="feed-inner"><div id="feed-empty">Nada por aqui ainda.<br>Cole um link lá embaixo.</div></div></div>
     <div class="f-send"><input id="feed-url" placeholder="Cole um link: X, YouTube, Instagram, TikTok, foto…" autocomplete="off"><button class="f-btn" id="feed-add" type="button">Postar</button></div>
   </aside>`;
@@ -108,6 +107,7 @@
     const mine = !!(api && row.user_id === api.uid());
     if (mine) stick = true;
     draw(row);
+    if (live) { try { api && api.sound && api.sound(); } catch (e) {} }
     if (live && !mine && !document.body.classList.contains('feed-open')) {
       unseen++; const h = $('feed-handle'); h.classList.add('new'); setTimeout(() => h.classList.remove('new'), 2500);
     }
@@ -142,7 +142,6 @@
     }
   };
   $('feed-url').addEventListener('keydown', e => { if (e.key === 'Enter') $('feed-add').click(); });
-  document.querySelectorAll('.f-tab').forEach(b => b.onclick = () => { document.querySelectorAll('.f-tab').forEach(x => x.classList.remove('on')); b.classList.add('on'); filtro = b.dataset.f; aplicar(); });
 
   window.RimkFeed = {
     // api = { list(), add(url), remove(id), uid(), canRemove(row), color(nome), avatar(nome) }; sem api (P2P/local) o botão nem aparece
