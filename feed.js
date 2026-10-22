@@ -4,12 +4,15 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const $ = id => document.getElementById(id);
   const css = `
-  #feed-handle{position:fixed;top:0;left:50%;transform:translate(-50%,-72%);z-index:74;display:none;background:#0d1210;color:var(--cat,#99FF00);border:1px solid var(--cat,#99FF00);border-top:0;border-radius:0 0 14px 14px;padding:14px 22px 6px;font:20px 'VT323',monospace;letter-spacing:2px;cursor:pointer;opacity:.35;transition:transform .25s,opacity .25s,color .4s,border-color .4s}
+  #feed-handle{position:fixed;left:0;top:clamp(110px,18vh,200px);z-index:74;display:none;writing-mode:vertical-rl;text-orientation:upright;background:#0d1210;color:var(--cat,#99FF00);border:1px solid var(--cat,#99FF00);border-left:0;border-radius:0 12px 12px 0;padding:14px 6px;font:20px 'VT323',monospace;letter-spacing:3px;cursor:pointer;opacity:.9;transition:left .35s cubic-bezier(.2,.8,.2,1),opacity .25s,color .4s,border-color .4s,box-shadow .4s}
   #feed-handle.on{display:block}
-  #feed-handle:hover,body.feed-open #feed-handle,#feed-handle.new{transform:translate(-50%,0);opacity:1}
-  #feed-badge{background:var(--cat,#99FF00);color:#000;border-radius:10px;padding:0 7px;margin-left:6px;font-size:16px}
+  #feed-handle:hover{opacity:1;box-shadow:0 0 14px color-mix(in srgb,var(--cat,#99FF00) 55%,transparent)}
+  body.feed-open #feed-handle{left:min(420px,100vw)}
+  #feed-handle.new{animation:fpulse 1s ease-in-out 3}
+  @keyframes fpulse{50%{box-shadow:0 0 20px var(--cat,#99FF00)}}
+  #feed-badge{display:block;writing-mode:horizontal-tb;text-align:center;background:var(--cat,#99FF00);color:#000;border-radius:10px;padding:0 6px;margin:8px auto 0;font-size:15px;letter-spacing:0}
   #feed-badge:empty{display:none}
-  #feed-panel{position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);z-index:73;display:flex;flex-direction:column;background:rgba(7,9,10,.97);backdrop-filter:blur(8px);border-left:2px solid var(--cat,#99FF00);box-shadow:-12px 0 50px color-mix(in srgb,var(--cat,#99FF00) 28%,#000);transform:translateX(105%);visibility:hidden;transition:transform .35s cubic-bezier(.2,.8,.2,1),visibility 0s linear .35s,border-color .4s,box-shadow .4s}
+  #feed-panel{position:fixed;top:0;left:0;bottom:0;width:min(420px,100vw);z-index:73;display:flex;flex-direction:column;background:rgba(7,9,10,.97);backdrop-filter:blur(8px);border-right:2px solid var(--cat,#99FF00);box-shadow:12px 0 50px color-mix(in srgb,var(--cat,#99FF00) 28%,#000);transform:translateX(-105%);visibility:hidden;transition:transform .35s cubic-bezier(.2,.8,.2,1),visibility 0s linear .35s,border-color .4s,box-shadow .4s}
   body.feed-open #feed-panel{transform:none;visibility:visible;transition:transform .35s cubic-bezier(.2,.8,.2,1),visibility 0s,border-color .4s,box-shadow .4s}
   .f-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px;font:22px 'VT323',monospace;letter-spacing:2px;color:var(--cat,#99FF00)}
   .f-head button{background:none;border:0;color:#7f8a7a;font-size:18px;cursor:pointer}.f-head button:hover{color:#FF3860}
@@ -40,7 +43,7 @@
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
   const root = document.createElement('div');
-  root.innerHTML = `<button id="feed-handle" type="button" title="Feed da sala">◢ FEED <span id="feed-badge"></span></button>
+  root.innerHTML = `<button id="feed-handle" type="button" title="Feed da sala">FEED<span id="feed-badge"></span></button>
   <aside id="feed-panel" aria-label="Feed da sala">
     <div class="f-head"><span>FEED DA SALA</span><button id="feed-hide" type="button" aria-label="Fechar">✕</button></div>
     <div class="f-tabs"><button class="f-tab on" data-f="all">Tudo</button><button class="f-tab" data-f="video">Vídeos</button><button class="f-tab" data-f="img">Fotos/memes</button></div>
