@@ -5,7 +5,9 @@
      captura essa imagem/áudio (video.captureStream()).
    - Cada pessoa da sala abre uma conexão WebRTC direta com o anfitrião e recebe o stream. O arquivo nunca
      sobe para servidor nenhum: o anfitrião é quem "envia" (upload = bitrate x número de espectadores).
-   - Play, pause e avanço acontecem só no player do anfitrião; todo mundo acompanha, então fica sincronizado.
+   - Play, pause e avanço acontecem no player do anfitrião; todo mundo acompanha, então fica sincronizado.
+   - O botão só aparece em salas da categoria "Filmes". Quem tem poderes de anfitrião (o sub-host) também controla
+     play/pause/avançar: o comando vai por um DataChannel até o anfitrião, que confere o cargo antes de obedecer.
    - A "sinalização" (troca de SDP) usa o canal Realtime da sala (broadcast). A presença da sala carrega
      o campo "cin" (número > 0 = essa pessoa está transmitindo), assim quem entra depois também conecta.
    - TURN opcional: /turn-config.json (gerado no build a partir de TURN_URLS / TURN_USERNAME / TURN_CREDENTIAL).
@@ -124,6 +126,10 @@
   .cin-bar button:hover,.cin-bar select:hover{border-color:var(--blue,#99FF00)}
   .cin-bar .stop{border-color:#FF3860;color:#FF3860}.cin-bar .stop:hover{background:#FF3860;color:#000}
   .cin-bar input[type=range]{width:90px;accent-color:var(--blue,#99FF00)}
+  .cin-bar .ctl{display:flex;align-items:center;gap:6px;flex:1 1 100%}
+  .cin-bar .ctl[hidden]{display:none}
+  .cin-bar .ctl input[type=range]{flex:1 1 auto;width:auto;min-width:80px}
+  .cin-bar .time{font-variant-numeric:tabular-nums;color:#C3CBBE;white-space:nowrap}
   .cin-bar .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#FF3860;margin-right:6px;box-shadow:0 0 8px #FF3860;animation:cinpulse 1.4s ease-in-out infinite}
   @keyframes cinpulse{50%{opacity:.35}}
   #cin-msg{position:absolute;left:0;right:0;top:0;bottom:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:16px;pointer-events:none;color:#C3CBBE;font-size:14px;text-shadow:0 1px 6px #000}
@@ -159,23 +165,37 @@
       '<video id="cin-video" playsinline></video>' +
       '<div id="cin-msg" hidden><span id="cin-msg-t"></span><button type="button" id="cin-sound" hidden>Ativar o som</button></div>' +
       '<div class="cin-bar" id="cin-guestbar" hidden>' +
+        '<span class="ctl" id="cin-ctl" hidden>' +
+          '<button type="button" id="cin-back" title="Voltar 10 segundos">-10s</button>' +
+          '<button type="button" id="cin-pp" title="Pausar ou continuar o filme para todos"><i class="fa-solid fa-pause"></i></button>' +
+          '<button type="button" id="cin-fwd" title="Avançar 10 segundos">+10s</button>' +
+          '<input type="range" id="cin-seek" min="0" max="0" step="1" value="0" aria-label="Posição do filme">' +
+        '</span>' +
         '<span class="grow" id="cin-gstat"></span>' +
+        '<span class="time" id="cin-time"></span>' +
         '<button type="button" id="cin-mute" title="Silenciar"><i class="fa-solid fa-volume-high"></i></button>' +
-        '<input type="range" id="cin-vol" min="0" max="1" step="0.05" value="1" aria-label="Volume">' +
+        '<input type="range" id="cin-vol" min="0" max="3" step="0.05" value="1" aria-label="Volume (até 300%)" title="Volume (até 300%)">' +
+        '<span class="time" id="cin-volp" style="min-width:38px;text-align:right"></span>' +
         '<button type="button" id="cin-fs" title="Tela cheia"><i class="fa-solid fa-expand"></i></button>' +
       '</div>';
     box.appendChild(layer); box.appendChild(startBtn); box.appendChild(fileInput);
 
     els = { video: $('cin-video'), hostbar: $('cin-hostbar'), guestbar: $('cin-guestbar'), file: $('cin-file'), stat: $('cin-stat'),
-      q: $('cin-q'), msg: $('cin-msg'), msgT: $('cin-msg-t'), sound: $('cin-sound'), gstat: $('cin-gstat'), mute: $('cin-mute'), vol: $('cin-vol') };
+      q: $('cin-q'), ctl: $('cin-ctl'), pp: $('cin-pp'), seek: $('cin-seek'), time: $('cin-time'), msg: $('cin-msg'), msgT: $('cin-msg-t'), sound: $('cin-sound'), gstat: $('cin-gstat'), mute: $('cin-mute'), vol: $('cin-vol'), volp: $('cin-volp') };
     QUALITIES.forEach(q => { const o = document.createElement('option'); o.value = q.key; o.textContent = q.label; els.q.appendChild(o); });
     els.q.value = DEFAULT_Q;
     els.q.addEventListener('change', applyQuality);
     $('cin-stop').addEventListener('click', () => { stopHost(); notify('Transmissão encerrada.', 'info'); });
     $('cin-swap').addEventListener('click', pickFile);
-    els.sound.addEventListener('click', () => { els.video.muted = false; els.video.play().catch(() => {}); els.sound.hidden = true; showMsg(''); syncVolUi(); });
-    els.vol.addEventListener('input', () => { els.video.volume = Number(els.vol.value); els.video.muted = false; syncVolUi(); });
-    els.mute.addEventListener('click', () => { els.video.muted = !els.video.muted; syncVolUi(); });
+    els.sound.addEventListener('click', () => { muted = false; resumeAudio(); els.video.play().catch(() => {}); els.sound.hidden = true; showMsg(''); applyGain(); syncVolUi(); });
+    layer.addEventListener('pointerdown', () => { if (aud && aud.ac.state === 'suspended') resumeAudio(); });
+    els.pp.addEventListener('click', () => cmd(watch && watch.st && !watch.st.p ? 'pause' : 'play'));
+    $('cin-back').addEventListener('click', () => cmd('seek', Math.max(0, curT() - 10)));
+    $('cin-fwd').addEventListener('click', () => cmd('seek', curT() + 10));
+    els.seek.addEventListener('input', () => { if (watch) watch.drag = true; tr(els.time, fmt(Number(els.seek.value)) + ' / ' + fmt(watch && watch.st ? watch.st.d : 0)); });
+    els.seek.addEventListener('change', () => { if (watch) watch.drag = false; cmd('seek', Number(els.seek.value)); });
+    els.vol.addEventListener('input', () => { vol = Number(els.vol.value); muted = false; applyGain(); syncVolUi(); try { localStorage.setItem('cinVol', String(vol)); } catch (e) {} });
+    els.mute.addEventListener('click', () => { muted = !muted; applyGain(); syncVolUi(); });
     $('cin-fs').addEventListener('click', () => {
       const d = document;
       if (d.fullscreenElement) d.exitFullscreen().catch(() => {});
@@ -183,9 +203,46 @@
     });
     return true;
   }
+  /* ---------- volume do espectador ----------
+     O áudio passa por um Web Audio (ganho até 300% + compressor para não estourar), porque o volume
+     máximo do <video> (100%) fica baixo quando o filme foi gravado baixinho. O <video> fica mudo e só mostra a imagem. */
+  let vol = 1, muted = false, aud = null;
+  try { const sv = parseFloat(localStorage.getItem('cinVol')); if (sv >= 0 && sv <= 3) vol = sv; } catch (e) {}
+  function applyGain() {
+    if (aud) aud.gain.gain.value = muted ? 0 : vol;
+    else if (els.video) { els.video.volume = Math.min(1, vol); els.video.muted = muted; }   // sem Web Audio: volume normal do <video>
+  }
+  function resumeAudio() { try { if (aud && aud.ac.state === 'suspended') aud.ac.resume().catch(() => {}); } catch (e) {} }
+  function teardownAudio() {
+    const a = aud; aud = null;
+    if (a) { try { a.src.disconnect(); a.gain.disconnect(); a.comp.disconnect(); a.ac.close(); } catch (e) {} }
+  }
+  function setupAudio(stream) {
+    teardownAudio();
+    const tracks = stream.getAudioTracks();
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!tracks.length || !AC) { els.video.muted = muted; els.video.volume = Math.min(1, vol); return false; }
+    try {
+      const ac = new AC();
+      const src = ac.createMediaStreamSource(new MediaStream(tracks));
+      const gain = ac.createGain();
+      const comp = ac.createDynamicsCompressor();
+      comp.threshold.value = -8; comp.knee.value = 12; comp.ratio.value = 10; comp.attack.value = 0.003; comp.release.value = 0.25;
+      src.connect(gain); gain.connect(comp); comp.connect(ac.destination);
+      aud = { ac, src, gain, comp };
+      els.video.muted = true;
+      applyGain();
+      ac.resume().catch(() => {});
+      setTimeout(() => { if (aud && aud.ac === ac && ac.state !== 'running') showMsg('', true); }, 600);   // navegador bloqueou o som: pede um clique
+      ac.onstatechange = () => { if (aud && aud.ac === ac && ac.state === 'running') { els.sound.hidden = true; if (els.video.videoWidth > 0) showMsg(''); } };
+      return true;
+    } catch (e) { console.error(e); aud = null; els.video.muted = muted; els.video.volume = Math.min(1, vol); return false; }
+  }
   function syncVolUi() {
-    const m = els.video.muted || els.video.volume === 0;
+    const m = muted || vol === 0;
     els.mute.innerHTML = '<i class="fa-solid ' + (m ? 'fa-volume-xmark' : 'fa-volume-high') + '"></i>';
+    els.vol.value = String(vol);
+    tr(els.volp, Math.round((muted ? 0 : vol) * 100) + '%');
   }
   function showMsg(t, soundBtn) {
     if (!els.msg) return;
@@ -196,9 +253,11 @@
   function refreshButton() {
     if (!injectUI()) return;
     const streamer = users().find(u => u.cin > 0 && u.id !== me());
-    const canStart = !!(ctx && ctx.isAdmin && ctx.isAdmin());
+    const inMovies = !ctx || !ctx.category || ctx.category() === 'filmes';
+    const canStart = inMovies && !!(ctx && ctx.isAdmin && ctx.isAdmin());
     startBtn.classList.toggle('on', canStart && !host);
     startBtn.disabled = !!streamer;
+    startBtn.classList.toggle('on', canStart && !host);
     const span = startBtn.querySelector('span');
     tr(span, streamer ? (streamer.name + ' está transmitindo') : 'Transmitir filme');
   }
@@ -273,6 +332,7 @@
     myNonce = (Math.floor(Math.random() * 2e9) + 1);
     host = { video: v, stream, url, nonce: myNonce, peers: new Map(), timer: null, prev: new Map(), prevAt: 0 };
     host.timer = setInterval(hostStats, 2000);
+    host.push = setInterval(hostPush, 1000);
     ctx.retrack();                 // publica "cin" na presença: a sala toda começa a conectar
     refreshButton(); hostUi();
     notify('Transmissão pronta. Aperte play quando todos entrarem.', 'success');
@@ -281,7 +341,7 @@
   function stopHost(silent) {
     if (!host) return;
     const h = host; host = null; myNonce = 0;
-    clearInterval(h.timer);
+    clearInterval(h.timer); clearInterval(h.push);
     h.peers.forEach(p => { try { p.pc.close(); } catch (e) {} });
     try { h.stream.getTracks().forEach(t => t.stop()); } catch (e) {}
     try { URL.revokeObjectURL(h.url); } catch (e) {}
@@ -349,6 +409,9 @@
     const peer = { pc };
     h.peers.set(from, peer);
     h.stream.getTracks().forEach(t => pc.addTrack(t, h.stream));
+    peer.dc = pc.createDataChannel('cin');
+    peer.dc.onmessage = (e) => hostOnCmd(from, e.data);
+    peer.dc.onopen = hostPush;
     pc.onconnectionstatechange = () => {
       const st = pc.connectionState;
       if (st === 'connected') {
@@ -382,9 +445,9 @@
   function stopWatch(silent) {
     if (!watch) return;
     const w = watch; watch = null;
-    w.timers.forEach(clearTimeout);
+    w.timers.forEach(clearTimeout); clearInterval(w.tick);
     try { w.pc && w.pc.close(); } catch (e) {}
-    layerHide();
+    teardownAudio(); layerHide(); if (els.ctl) els.ctl.hidden = true; tr(els.time, '');
     if (!silent) notify('A transmissão terminou.', 'info');
   }
 
@@ -392,9 +455,9 @@
     if (host) return;
     if (watch) stopWatch(true);
     injectUI();
-    watch = { id, n, pc: null, tries: 0, timers: [], got: false };
+    watch = { id, n, pc: null, tries: 0, timers: [], got: false, st: null, dc: null, drag: false, tick: setInterval(updateCtl, 500) };
     layerShow('guest');
-    els.video.muted = false; syncVolUi();
+    els.video.muted = true; applyGain(); syncVolUi();
     showMsg('Conectando à transmissão de ' + nameOf(id) + '...');
     tr(els.gstat, nameOf(id) + ' está transmitindo');
     loadIce().then(() => { if (watch && watch.id === id && watch.n === n) askJoin(); });
@@ -410,7 +473,7 @@
 
   function retryLater(w) {
     if (watch !== w) return;
-    try { w.pc && w.pc.close(); } catch (e) {} w.pc = null; w.got = false;
+    try { w.pc && w.pc.close(); } catch (e) {} w.pc = null; w.got = false; w.dc = null;
     showMsg('Reconectando...');
     const wait = Math.min(1500 * (++w.tries), 12000);
     w.timers.push(setTimeout(() => { if (watch === w) askJoin(); }, wait));
@@ -420,8 +483,10 @@
     const w = watch;
     if (!w || from !== w.id || n !== w.n || !validSdp(sdp)) return;
     if (w.pc) { try { w.pc.close(); } catch (e) {} }
+    w.dc = null;
     const pc = new RTCPeerConnection({ iceServers });
     w.pc = pc;
+    pc.ondatachannel = (ev) => { w.dc = ev.channel; ev.channel.onmessage = (e) => guestOnState(w, e.data); };
     pc.ontrack = (ev) => {
       let st = ev.streams && ev.streams[0];
       if (!st) { st = w.stream || new MediaStream(); st.addTrack(ev.track); }
@@ -430,12 +495,10 @@
       try { ev.receiver.playoutDelayHint = 0.5; } catch (e) {}
       if (els.video.srcObject !== st) {
         els.video.srcObject = st;
-        els.video.muted = false;
-        els.video.play().then(() => { els.sound.hidden = true; }).catch(() => {
-          // o navegador bloqueou o som automático: toca mudo e pede um clique
-          els.video.muted = true; els.video.play().catch(() => {}); showMsg('', true); syncVolUi();
-        });
+        els.video.muted = true;   // a imagem toca no <video>; o som sai pelo Web Audio (setupAudio)
+        els.video.play().catch(() => {});
       }
+      if (ev.track.kind === 'audio') setupAudio(st);
     };
     pc.onconnectionstatechange = () => {
       if (watch !== w || w.pc !== pc) return;
@@ -469,6 +532,52 @@
     chk();
   }
 
+  /* ---------- controle remoto (sub-host) ---------- */
+  const fmt = (x) => { x = Math.max(0, Math.floor(Number(x) || 0)); const h = Math.floor(x / 3600), m = Math.floor(x % 3600 / 60), sec = x % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(sec).padStart(2, '0'); };
+  const isAdminId = (id) => { const u = users().find(x => x.id === id); return !!u && (u.host === true || u.cohost === true); };
+  const curT = () => { const w = watch; if (!w || !w.st) return 0; return w.st.t + (w.st.p ? 0 : (performance.now() - w.st.at) / 1000); };
+  function cmd(k, t) {
+    const w = watch;
+    if (!w || !w.dc || w.dc.readyState !== 'open' || !isAdminId(me())) return;
+    try { w.dc.send(JSON.stringify({ k, t: Number.isFinite(t) ? t : 0 })); } catch (e) {}
+  }
+  function updateCtl() {
+    if (!els.ctl) return;
+    const w = watch;
+    els.ctl.hidden = !(w && isAdminId(me()));
+    if (!w || !w.st) { tr(els.time, ''); return; }
+    const d = w.st.d || 0, t = Math.min(curT(), d || curT());
+    tr(els.time, fmt(t) + (d ? ' / ' + fmt(d) : ''));
+    els.pp.innerHTML = '<i class="fa-solid ' + (w.st.p ? 'fa-play' : 'fa-pause') + '"></i>';
+    els.pp.title = w.st.p ? 'Continuar o filme para todos' : 'Pausar o filme para todos';
+    if (!w.drag) { els.seek.max = String(Math.floor(d)); els.seek.value = String(Math.floor(t)); }
+  }
+  function hostPush() {
+    if (!host) return;
+    const v = host.video;
+    const m = JSON.stringify({ k: 'st', t: v.currentTime || 0, d: Number.isFinite(v.duration) ? v.duration : 0, p: v.paused || v.ended });
+    host.peers.forEach(p => { try { if (p.dc && p.dc.readyState === 'open') p.dc.send(m); } catch (e) {} });
+  }
+  function hostOnCmd(from, raw) {
+    if (!host || typeof raw !== 'string' || raw.length > 200 || !isAdminId(from)) return;
+    let c; try { c = JSON.parse(raw); } catch (e) { return; }
+    const v = host.video;
+    try {
+      if (c.k === 'play') v.play().catch(() => {});
+      else if (c.k === 'pause') v.pause();
+      else if (c.k === 'seek' && Number.isFinite(c.t)) v.currentTime = Math.min(Math.max(0, c.t), Number.isFinite(v.duration) ? v.duration : c.t);
+      else return;
+    } catch (e) { return; }
+    setTimeout(hostPush, 150);
+  }
+  function guestOnState(w, raw) {
+    if (watch !== w || typeof raw !== 'string' || raw.length > 200) return;
+    let m; try { m = JSON.parse(raw); } catch (e) { return; }
+    if (!m || m.k !== 'st' || !Number.isFinite(m.t)) return;
+    w.st = { t: m.t, d: Number.isFinite(m.d) ? m.d : 0, p: !!m.p, at: performance.now() };
+    updateCtl();
+  }
+
   /* ============================================================
      ENTRADA / SAÍDA / PRESENÇA
      ============================================================ */
@@ -485,7 +594,7 @@
 
   function onPresence() {
     if (!ctx) return;
-    refreshButton();
+    refreshButton(); updateCtl();
     if (host) {
       // quem saiu da sala não precisa mais de conexão
       const ids = new Set(users().map(u => u.id));
@@ -503,6 +612,7 @@
     leave,
     signal: onSignal,
     presence: onPresence,
+    refresh: () => { if (ctx) refreshButton(); },
     nonce: () => myNonce
   };
   function leave() {

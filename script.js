@@ -677,6 +677,7 @@
                     send: (payload) => { if (channel === ch) ch.send({ type: 'broadcast', event: 'cin', payload }); },
                     retrack: () => track(),
                     isAdmin: () => store.isAdmin(),
+                    category: () => currentCat,
                     getUsers: () => store.getUsers(),
                     notify: (m, t) => showNotification(m, t),
                     yt: () => ytPlayer
@@ -1295,6 +1296,7 @@
         $('cat-chip-label').textContent = c.label;
         markChecked($('cat-grid-room'), c.key);
         updateCatAdminUI();
+        try { if (window.RimkCinema) RimkCinema.refresh(); } catch (e) {}
     }
     function clearRoomCategory() {
         delete document.body.dataset.cat;
