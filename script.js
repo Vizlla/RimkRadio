@@ -566,7 +566,7 @@
         const toRoom = (r) => ({ ...(r.state || {}), name: r.name, locked: r.locked === true, category: r.category });
         const emitRoom = () => { if (row) { const d = toRoom(row); roomCbs.forEach(cb => cb(d)); } };
         const emitChat = () => chatCbs.forEach(cb => cb(chat));
-        const emitPresence = () => { const list = users.map(u => ({ ...u, host: !!row && u.id === row.host_id, cohost: !!row && !!row.cohost_id && u.id === row.cohost_id })); presenceCbs.forEach(cb => cb(list)); };
+        const emitPresence = () => { const list = users.map(u => ({ ...u, host: !!row && u.id === row.host_id, cohost: !!row && !!row.cohost_id && u.id === row.cohost_id })); presenceCbs.forEach(cb => cb(list)); try { if (window.RimkCinema) RimkCinema.presence(); } catch (e) { console.error(e); } };
         const roleEvent = (ev) => { try { if (typeof store.onRole === 'function') store.onRole(ev); } catch (e) { console.error(e); } };
 
         function setRow(next) {
@@ -651,7 +651,7 @@
                 const st = ch.presenceState();
                 users = Object.entries(st).map(([uid, metas]) => {
                     const m = (metas && metas[0]) || {};
-                    return { id: uid, name: clip(noCtl(m.name), 30) || 'Convidado', color: safeColor(m.color), av: window.RimkAvatar ? RimkAvatar.clean(m.av) : null };
+                    return { id: uid, name: clip(noCtl(m.name), 30) || 'Convidado', color: safeColor(m.color), av: window.RimkAvatar ? RimkAvatar.clean(m.av) : null, cin: Math.max(0, Math.floor(Number(m.cin)) || 0) };
                 });
                 emitPresence();
             });
@@ -665,7 +665,23 @@
                 if (roomId !== id || !payload || (payload.k !== 'up' && payload.k !== 'down')) return;
                 try { if (typeof store.onReaction === 'function') store.onReaction({ k: payload.k, by: clip(noCtl(payload.by), 30) }); } catch (e) { console.error(e); }
             });
+            ch.on('broadcast', { event: 'cin' }, ({ payload }) => {
+                if (roomId !== id) return;
+                try { if (window.RimkCinema) RimkCinema.signal(payload); } catch (e) { console.error(e); }
+            });
             channel = ch;
+            // cinema: transmissão de filme do anfitrião por WebRTC (veja cinema.js)
+            try {
+                if (window.RimkCinema) RimkCinema.open({
+                    myId: myUid,
+                    send: (payload) => { if (channel === ch) ch.send({ type: 'broadcast', event: 'cin', payload }); },
+                    retrack: () => track(),
+                    isAdmin: () => store.isAdmin(),
+                    getUsers: () => store.getUsers(),
+                    notify: (m, t) => showNotification(m, t),
+                    yt: () => ytPlayer
+                });
+            } catch (e) { console.error(e); }
             // assina no próximo ciclo, depois que a interface registrou todos os ouvintes
             setTimeout(() => {
                 if (channel !== ch) return;
@@ -681,10 +697,11 @@
             setTimeout(() => { heartbeat().catch(() => {}); }, 2500);
         }
         function track() {
-            if (channel) channel.track({ name: clip(clientUsername, 30), color: myColor, av: myAvatar || null }).catch(() => {});
+            if (channel) channel.track({ name: clip(clientUsername, 30), color: myColor, av: myAvatar || null, cin: (window.RimkCinema && RimkCinema.nonce()) || 0 }).catch(() => {});
         }
         function closeChannel() {
             clearInterval(beatTimer); beatTimer = null;
+            try { if (window.RimkCinema) RimkCinema.leave(); } catch (e) {}
             const ch = channel; channel = null;
             if (ch) { try { ch.untrack(); } catch (e) {} sb.removeChannel(ch).catch(() => {}); }
             roomId = null; row = null; chat = []; users = [];

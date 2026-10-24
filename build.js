@@ -22,7 +22,7 @@ const out = path.join(__dirname, 'dist');
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 
-for (const f of ['index.html', 'script.js', 'avatar.js', 'radio.js', 'feed.js', 'styles.css', 'tailwind-config.js', 'logo.png', 'logo-text.png', 'logo-zunk.svg', 'logo-alien.png', 'rimk-like.png', 'zunk-dislike.png']) {
+for (const f of ['index.html', 'script.js', 'avatar.js', 'radio.js', 'feed.js', 'cinema.js', 'styles.css', 'tailwind-config.js', 'logo.png', 'logo-text.png', 'logo-zunk.svg', 'logo-alien.png', 'rimk-like.png', 'zunk-dislike.png']) {
   fs.copyFileSync(path.join(__dirname, f), path.join(out, f));
 }
 // Avatares: PNGs das camadas (alien, acessórios, fundos e ícones)
@@ -43,4 +43,11 @@ if (ytKey) {
 } else {
   console.log('Chave do YouTube: não configurada (opcional — defina YOUTUBE_API_KEY no Render para busca mais estável).');
 }
+// TURN opcional (cinema): sem ele, só funciona entre redes que conseguem conexão direta (STUN).
+// Defina TURN_URLS (separe por vírgula, ex.: turn:meu.servidor:3478,turns:meu.servidor:5349), TURN_USERNAME e TURN_CREDENTIAL.
+const turnUrls = (process.env.TURN_URLS || '').split(',').map((x) => x.trim()).filter((x) => /^turns?:/i.test(x));
+if (turnUrls.length) {
+  fs.writeFileSync(path.join(out, 'turn-config.json'), JSON.stringify({ urls: turnUrls, username: (process.env.TURN_USERNAME || '').trim(), credential: (process.env.TURN_CREDENTIAL || '').trim() }));
+  console.log('TURN: configurado (' + turnUrls.length + ' url).');
+} else console.log('TURN: não configurado (opcional — ajuda quando a conexão direta entre as pessoas falha).');
 console.log('Build ok. Supabase URL:', url);
