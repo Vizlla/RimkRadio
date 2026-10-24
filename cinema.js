@@ -17,11 +17,12 @@
   'use strict';
   const MAX_VIEWERS = 4;                 // máximo de espectadores além do anfitrião (5 pessoas no total)
   const QUALITIES = [
-    { key: '720', label: '720p · ~2,5 Mbps', h: 720, bps: 2500000 },
+    { key: '480', label: '480p · ~1,2 Mbps', h: 480, bps: 1200000 },
+    { key: '720', label: '720p · ~3 Mbps', h: 720, bps: 3000000 },
     { key: '1080', label: '1080p · ~5 Mbps', h: 1080, bps: 5000000 },
     { key: 'max', label: 'Original · ~8 Mbps', h: 0, bps: 8000000 }
   ];
-  const DEFAULT_Q = '1080';
+  const DEFAULT_Q = '720';   // padrão estável; 1080p só se o upload e a CPU do anfitrião aguentarem
   const MAX_SDP = 40000;
   const $ = (id) => document.getElementById(id);
 
@@ -87,7 +88,10 @@
     try { if (navigator.wakeLock && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch (e) {}
   }
   function releaseAwake() { try { if (wakeLock) wakeLock.release(); } catch (e) {} wakeLock = null; }
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && (host || watch)) keepAwake(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && (host || watch)) keepAwake();
+    else if (document.visibilityState === 'hidden' && host) notify('Mantenha esta aba visível enquanto transmite: em segundo plano o navegador pode fazer o filme travar para todos.', 'info');
+  });
 
   /* ---------- silencia o YouTube enquanto o cinema está ligado ---------- */
   function quietOn() {
@@ -425,23 +429,52 @@
     const n = Math.max(0, users().length - 1);
     const t = ok + '/' + n + ' conectados';
     const ap = audioProbe();
-    tr(els.stat, t + (host.mbps ? ' · ↑ ' + host.mbps.toFixed(1).replace('.', ',') + ' Mbps' : '') + (ap ? ' · ' + ap : ''));
+    const dg = host.diag || '';
+    tr(els.stat, t + (host.mbps ? ' · ↑ ' + host.mbps.toFixed(1).replace('.', ',') + ' Mbps' : '') + (dg ? ' ·' + dg : '') + (ap ? ' · ' + ap : ''));
   }
 
   async function hostStats() {
     if (!host) return;
     let bytes = 0; const now = performance.now(); const cur = new Map();
+    const d = { fps: 99, cpu: false, bw: false, loss: 0, rtt: 0 };
     for (const [uid, p] of host.peers) {
       if (p.pc.connectionState !== 'connected') continue;
       try {
         const rep = await p.pc.getStats();
-        let b = 0; rep.forEach(r => { if (r.type === 'outbound-rtp' && !r.isRemote) b += (r.bytesSent || 0); });
+        let b = 0;
+        rep.forEach(r => {
+          if (r.type === 'outbound-rtp' && !r.isRemote) {
+            b += (r.bytesSent || 0);
+            if (r.kind === 'video') {
+              if (Number.isFinite(r.framesPerSecond)) d.fps = Math.min(d.fps, r.framesPerSecond);
+              if (r.qualityLimitationReason === 'cpu') d.cpu = true;
+              else if (r.qualityLimitationReason === 'bandwidth') d.bw = true;
+            }
+          } else if (r.type === 'remote-inbound-rtp' && r.kind === 'video') {
+            if (Number.isFinite(r.fractionLost)) d.loss = Math.max(d.loss, r.fractionLost);
+            if (Number.isFinite(r.roundTripTime)) d.rtt = Math.max(d.rtt, r.roundTripTime);
+          }
+        });
         cur.set(uid, b);
         if (host.prev.has(uid)) bytes += Math.max(0, b - host.prev.get(uid));
       } catch (e) {}
     }
     if (host && host.prevAt) host.mbps = (bytes * 8) / ((now - host.prevAt) / 1000) / 1e6;
-    if (host) { host.prev = cur; host.prevAt = now; hostUi(); }
+    if (host) {
+      host.prev = cur; host.prevAt = now;
+      host.diag = (d.fps < 99 ? Math.round(d.fps) + ' fps' : '') + (cur.size ? ' · perda ' + Math.round(d.loss * 100) + '%' : '') + (d.cpu ? ' · ⚠ CPU no limite' : (d.bw && d.loss > 0.03) ? ' · ⚠ rede no limite' : '');
+      // limite sustentado (~6 s): baixa a qualidade um degrau sozinho (nunca sobe sozinho)
+      host.strain = (d.cpu || d.loss > 0.08 || (d.bw && d.loss > 0.03)) ? host.strain + 1 : 0;   // 'bw' sozinho é normal na subida inicial
+      if (host.strain >= 3) {
+        host.strain = 0;
+        const i = QUALITIES.findIndex(q => q.key === els.q.value);
+        if (i > 0) {
+          els.q.value = QUALITIES[i - 1].key; applyQuality();
+          notify('Reduzi a qualidade para ' + QUALITIES[i - 1].label.split(' ·')[0] + ' porque ' + (d.cpu ? 'o computador' : 'a conexão') + ' não estava aguentando.', 'info');
+        }
+      }
+      hostUi();
+    }
   }
 
   function applyQuality() {
@@ -460,7 +493,7 @@
           prm.encodings[0].maxBitrate = q.bps;
           prm.encodings[0].scaleResolutionDownBy = (q.h && vh > q.h) ? vh / q.h : 1;
           prm.encodings[0].maxFramerate = 30;
-          prm.degradationPreference = 'maintain-resolution';
+          prm.degradationPreference = 'balanced';   // sob aperto, reduz resolução E fps aos poucos (maintain-resolution fazia o vídeo engasgar)
         } else prm.encodings[0].maxBitrate = 192000;
         s.setParameters(prm).catch(() => {});
       } catch (e) {}
@@ -561,8 +594,8 @@
       let st = ev.streams && ev.streams[0];
       if (!st) { st = w.stream || new MediaStream(); st.addTrack(ev.track); }
       w.stream = st;
-      try { ev.receiver.jitterBufferTarget = 500; } catch (e) {}
-      try { ev.receiver.playoutDelayHint = 0.5; } catch (e) {}
+      try { ev.receiver.jitterBufferTarget = 1200; } catch (e) {}
+      try { ev.receiver.playoutDelayHint = 1.2; } catch (e) {}
       if (els.video.srcObject !== st) {
         els.video.srcObject = st;
         els.video.muted = true;   // a imagem toca no <video>; o som sai pelo Web Audio (setupAudio)
