@@ -118,7 +118,9 @@
   #cin-start[disabled]{opacity:.55;cursor:not-allowed;background:rgba(6,9,6,.88);color:#8E9A88;border-color:#3a4636;box-shadow:none}
   #cin-layer{position:absolute;inset:0;z-index:20;display:none;flex-direction:column;background:#000;color:#E8E8E3;font-family:'Exo 2',system-ui,sans-serif}
   #cin-layer.on{display:flex}
-  #cin-layer video{flex:1 1 auto;min-height:0;width:100%;background:#000;object-fit:contain}
+  #cin-layer{overflow:hidden}
+  #cin-layer video{flex:1 1 0%;height:0;min-height:0;width:100%;max-width:none;background:#000;object-fit:contain}
+  body.cin-on #like-btn,body.cin-on #dislike-btn{visibility:hidden}
   .cin-bar{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:6px 10px;background:#060906;font-size:12px;line-height:1.2}
   .cin-bar[hidden]{display:none}
   .cin-bar .grow{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#C3CBBE}
@@ -266,6 +268,7 @@
     els.hostbar.hidden = role !== 'host';
     els.guestbar.hidden = role !== 'guest';
     els.video.controls = role === 'host';
+    document.body.classList.add('cin-on');
     quietOn(); keepAwake();
   }
   function layerHide() {
@@ -275,6 +278,8 @@
     els.video.removeAttribute('src'); els.video.srcObject = null; try { els.video.load(); } catch (e) {}
     showMsg('');
     if (document.fullscreenElement && layer.contains(document.fullscreenElement)) document.exitFullscreen().catch(() => {});
+    document.body.classList.remove('cin-on');
+    try { document.dispatchEvent(new Event('cinema-end')); } catch (e) {}
     quietOff(); releaseAwake();
   }
 
@@ -284,6 +289,29 @@
   function pickFile() { if (injectUI() && fileInput) fileInput.click(); }
 
   function qualityNow() { return QUALITIES.find(q => q.key === (els.q && els.q.value)) || QUALITIES.find(q => q.key === DEFAULT_Q); }
+
+  /* Áudio do anfitrião: o filme passa por um Web Audio que mistura 5.1 (e outros) para ESTÉREO de verdade.
+     Sem isso, a captura do <video> manda só alguns canais e a fala (canal central) some: "ouço tudo menos as vozes". */
+  let hostAud = null;
+  function hostAudio(v) {
+    if (hostAud && hostAud.v === v) return hostAud;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    try {
+      const ac = new AC();
+      const src = ac.createMediaElementSource(v);
+      const mix = ac.createGain();
+      mix.channelCount = 2; mix.channelCountMode = 'explicit'; mix.channelInterpretation = 'speakers';
+      const comp = ac.createDynamicsCompressor();
+      comp.threshold.value = -6; comp.knee.value = 10; comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.2;
+      const dest = ac.createMediaStreamDestination();
+      dest.channelCount = 2;
+      src.connect(mix); mix.connect(ac.destination);   // o anfitrião ouve normalmente
+      mix.connect(comp); comp.connect(dest);           // o que vai para a sala (sem estourar)
+      hostAud = { v, ac, dest };
+      return hostAud;
+    } catch (e) { console.error(e); return null; }
+  }
 
   async function startHost(file) {
     if (!ctx || !ctx.isAdmin()) return;
@@ -317,9 +345,14 @@
     // captureStream só entrega as trilhas depois que a mídia começa a decodificar
     let stream;
     try {
-      stream = v.captureStream ? v.captureStream() : v.mozCaptureStream();
+      const ha = hostAudio(v);
+      if (ha) { ha.ac.resume().catch(() => {}); if (!v.__cinResume) { v.__cinResume = true; v.addEventListener('play', () => { try { hostAud && hostAud.ac.resume(); } catch (e) {} }); } }
+      const cap = v.captureStream ? v.captureStream() : v.mozCaptureStream();
       await v.play().catch(() => {});
-      for (let i = 0; i < 40 && !stream.getTracks().length; i++) await sleep(100);
+      for (let i = 0; i < 40 && !cap.getVideoTracks().length; i++) await sleep(100);
+      stream = new MediaStream(cap.getVideoTracks());
+      if (ha) ha.dest.stream.getAudioTracks().forEach(t => stream.addTrack(t.clone()));
+      else cap.getAudioTracks().forEach(t => stream.addTrack(t));
       v.pause(); v.currentTime = 0;
     } catch (e) { console.error(e); }
     if (!stream || !stream.getVideoTracks().length) {
@@ -549,12 +582,35 @@
     const d = w.st.d || 0, t = Math.min(curT(), d || curT());
     tr(els.time, fmt(t) + (d ? ' / ' + fmt(d) : ''));
     els.pp.innerHTML = '<i class="fa-solid ' + (w.st.p ? 'fa-play' : 'fa-pause') + '"></i>';
+    syncMainBtn(w.st.p);
     els.pp.title = w.st.p ? 'Continuar o filme para todos' : 'Pausar o filme para todos';
     if (!w.drag) { els.seek.max = String(Math.floor(d)); els.seek.value = String(Math.floor(t)); }
+  }
+  function syncMainBtn(paused) {
+    const b = $('play-pause-btn');
+    if (b) b.innerHTML = '<i class="fa-solid ' + (paused ? 'fa-play ml-1' : 'fa-pause') + '"></i>';
+  }
+  function control(k) {
+    if (host) {
+      const v = host.video;
+      try {
+        if (k === 'toggle') { if (v.paused) v.play().catch(() => {}); else v.pause(); }
+        else v.currentTime = Math.max(0, Math.min(v.currentTime + (k === 'fwd' ? 10 : -10), Number.isFinite(v.duration) ? v.duration : 1e9));
+      } catch (e) {}
+      setTimeout(hostPush, 150); return true;
+    }
+    if (watch) {
+      if (!isAdminId(me())) { notify('Só quem tem poderes de anfitrião controla o filme.', 'info'); return true; }
+      if (k === 'toggle') cmd(watch.st && !watch.st.p ? 'pause' : 'play');
+      else cmd('seek', Math.max(0, curT() + (k === 'fwd' ? 10 : -10)));
+      return true;
+    }
+    return false;
   }
   function hostPush() {
     if (!host) return;
     const v = host.video;
+    syncMainBtn(v.paused || v.ended);
     const m = JSON.stringify({ k: 'st', t: v.currentTime || 0, d: Number.isFinite(v.duration) ? v.duration : 0, p: v.paused || v.ended });
     host.peers.forEach(p => { try { if (p.dc && p.dc.readyState === 'open') p.dc.send(m); } catch (e) {} });
   }
@@ -613,7 +669,9 @@
     signal: onSignal,
     presence: onPresence,
     refresh: () => { if (ctx) refreshButton(); },
-    nonce: () => myNonce
+    nonce: () => myNonce,
+    active: () => !!(host || watch),
+    control
   };
   function leave() {
     if (host) stopHost(true);

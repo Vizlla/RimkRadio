@@ -1880,7 +1880,7 @@
         if (lastRoom.name && lastRoom.name !== currentRoomName) setRoomTitle(lastRoom.name);
         renderPlaylist(lastRoom.playlist, lastRoom.currentIndex);
         refreshSongTip();
-        $('play-pause-btn').innerHTML = lastRoom.isPlaying ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play ml-1"></i>';
+        if (!(window.RimkCinema && RimkCinema.active())) $('play-pause-btn').innerHTML = lastRoom.isPlaying ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play ml-1"></i>';
 
         updateLockUI();
         if (lastRoom.category !== currentCat || document.body.dataset.cat !== lastRoom.category) applyRoomCategory(lastRoom.category); else updateCatAdminUI();
@@ -1900,6 +1900,7 @@
        CONTROLES
        ============================================================ */
     window.togglePlayPause = function () {
+        if (window.RimkCinema && RimkCinema.active() && RimkCinema.control('toggle')) return;   // filme em transmissão: o botão controla o filme
         if (!canControl()) return;
         if (!currentRoomId || !lastRoom.playlist.length) return showNotification('Adicione uma música primeiro', 'error');
         let t = lastRoom.currentTime;
@@ -1907,8 +1908,10 @@
         playback({ isPlaying: !lastRoom.isPlaying, currentTime: t });
     };
 
-    window.nextSong = () => { if (canControl()) skipSong(1); };
-    window.previousSong = () => { if (canControl()) skipSong(-1); };
+    window.nextSong = () => { if (window.RimkCinema && RimkCinema.active() && RimkCinema.control('fwd')) return; if (canControl()) skipSong(1); };
+    window.previousSong = () => { if (window.RimkCinema && RimkCinema.active() && RimkCinema.control('back')) return; if (canControl()) skipSong(-1); };
+    // fim da transmissão: o botão principal volta a refletir a música da sala
+    document.addEventListener('cinema-end', () => { const b = $('play-pause-btn'); if (b) b.innerHTML = lastRoom && lastRoom.isPlaying ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play ml-1"></i>'; });
 
     window.playSpecificSong = (idx) => {
         if (!currentRoomId || !canControl()) return;
