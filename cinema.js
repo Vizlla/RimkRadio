@@ -80,6 +80,18 @@
       return 'a=fmtp:' + pt + ' ' + p;
     });
   }
+  // dica de bitrate para o Chrome começar mais alto (por padrão ele sobe devagar e o início fica borrado/travado)
+  function tuneVideoSdp(sdp, startKbps, minKbps) {
+    const pts = []; String(sdp).replace(/a=rtpmap:(\d+) (VP8|VP9|H264|AV1)\/90000/gi, (m, pt) => { pts.push(pt); return m; });
+    let out = String(sdp);
+    pts.forEach(pt => {
+      const hint = 'x-google-start-bitrate=' + startKbps + ';x-google-min-bitrate=' + minKbps;
+      const re = new RegExp('a=fmtp:' + pt + ' ([^\\r\\n]*)');
+      if (re.test(out)) out = out.replace(re, (m, p) => /x-google-start-bitrate/.test(p) ? m : 'a=fmtp:' + pt + ' ' + p + ';' + hint);
+      else out = out.replace(new RegExp('(a=rtpmap:' + pt + ' [^\\r\\n]*\\r?\\n)'), '$1a=fmtp:' + pt + ' ' + hint + '\r\n');
+    });
+    return out;
+  }
   const validSdp = (s) => typeof s === 'string' && s.length > 20 && s.length < MAX_SDP && s.startsWith('v=0');
 
   const send = (to, p) => { try { ctx.send(Object.assign({ to, from: me() }, p)); } catch (e) { console.error(e); } };
@@ -165,6 +177,7 @@
         '<span class="grow"><span class="dot"></span><b>Transmitindo</b> · <span id="cin-file"></span></span>' +
         '<span id="cin-stat"></span>' +
         '<select id="cin-voice" title="Reforço da voz (canal central de filmes 5.1)"><option value="1">Voz normal</option><option value="1.6" selected>Voz reforçada</option><option value="2.2">Voz muito reforçada</option></select>' +
+        '<select id="cin-codec" title="Codec do vídeo: H.264 costuma usar a placa de vídeo e pesa menos no computador"><option value="h264" selected>H.264 (leve)</option><option value="auto">Codec automático</option></select>' +
         '<select id="cin-q" title="Qualidade da transmissão"></select>' +
         '<button type="button" id="cin-swap" title="Trocar de filme">Trocar arquivo</button>' +
         '<button type="button" id="cin-stop" class="stop">Parar</button>' +
@@ -188,11 +201,19 @@
     box.appendChild(layer); box.appendChild(startBtn); box.appendChild(fileInput);
 
     els = { video: $('cin-video'), hostbar: $('cin-hostbar'), guestbar: $('cin-guestbar'), file: $('cin-file'), stat: $('cin-stat'),
-      q: $('cin-q'), voice: $('cin-voice'), ctl: $('cin-ctl'), pp: $('cin-pp'), seek: $('cin-seek'), time: $('cin-time'), msg: $('cin-msg'), msgT: $('cin-msg-t'), sound: $('cin-sound'), gstat: $('cin-gstat'), mute: $('cin-mute'), vol: $('cin-vol'), volp: $('cin-volp') };
+      q: $('cin-q'), voice: $('cin-voice'), codec: $('cin-codec'), ctl: $('cin-ctl'), pp: $('cin-pp'), seek: $('cin-seek'), time: $('cin-time'), msg: $('cin-msg'), msgT: $('cin-msg-t'), sound: $('cin-sound'), gstat: $('cin-gstat'), mute: $('cin-mute'), vol: $('cin-vol'), volp: $('cin-volp') };
     QUALITIES.forEach(q => { const o = document.createElement('option'); o.value = q.key; o.textContent = q.label; els.q.appendChild(o); });
     els.q.value = DEFAULT_Q;
     els.q.addEventListener('change', applyQuality);
     els.voice.addEventListener('change', () => setVoice());
+    // trocar o codec exige nova conexão: muda o número da transmissão e todo mundo reconecta sozinho
+    els.codec.addEventListener('change', () => {
+      if (!host) return;
+      host.peers.forEach(p => { try { p.pc.close(); } catch (e) {} }); host.peers.clear();
+      host.nonce = myNonce = (Math.floor(Math.random() * 2e9) + 1);
+      try { ctx.retrack(); } catch (e) {}
+      hostUi();
+    });
     $('cin-stop').addEventListener('click', () => { stopHost(); notify('Transmissão encerrada.', 'info'); });
     $('cin-swap').addEventListener('click', pickFile);
     els.sound.addEventListener('click', () => { muted = false; resumeAudio(); els.video.play().catch(() => {}); els.sound.hidden = true; showMsg(''); applyGain(); syncVolUi(); });
@@ -512,6 +533,13 @@
     const peer = { pc };
     h.peers.set(from, peer);
     h.stream.getTracks().forEach(t => pc.addTrack(t, h.stream));
+    if (els.codec && els.codec.value === 'h264') {
+      try {
+        const caps = (RTCRtpSender.getCapabilities('video') || {}).codecs || [];
+        const h264 = caps.filter(c => /h264/i.test(c.mimeType)), rest = caps.filter(c => !/h264/i.test(c.mimeType));
+        if (h264.length) pc.getTransceivers().forEach(t => { if (t.sender.track && t.sender.track.kind === 'video') t.setCodecPreferences(h264.concat(rest)); });
+      } catch (e) { console.warn('codec', e); }
+    }
     peer.dc = pc.createDataChannel('cin');
     peer.dc.onmessage = (e) => hostOnCmd(from, e.data);
     peer.dc.onopen = hostPush;
@@ -527,7 +555,7 @@
     };
     try {
       const offer = await pc.createOffer();
-      offer.sdp = tuneOpus(offer.sdp);
+      offer.sdp = tuneVideoSdp(tuneOpus(offer.sdp), 1500, 500);
       await pc.setLocalDescription(offer);
       await gatherDone(pc);
       if (host !== h || h.peers.get(from) !== peer) return;
@@ -548,7 +576,7 @@
   function stopWatch(silent) {
     if (!watch) return;
     const w = watch; watch = null;
-    w.timers.forEach(clearTimeout); clearInterval(w.tick);
+    w.timers.forEach(clearTimeout); clearInterval(w.tick); clearInterval(w.wd);
     try { w.pc && w.pc.close(); } catch (e) {}
     teardownAudio(); layerHide(); if (els.ctl) els.ctl.hidden = true; tr(els.time, '');
     if (!silent) notify('A transmissão terminou.', 'info');
@@ -606,7 +634,7 @@
     pc.onconnectionstatechange = () => {
       if (watch !== w || w.pc !== pc) return;
       const st = pc.connectionState;
-      if (st === 'connected') { w.tries = 0; w.got = true; showMsg(''); waitFrames(w); }
+      if (st === 'connected') { w.tries = 0; w.got = true; showMsg(''); waitFrames(w); clearInterval(w.wd); w.wd = setInterval(() => guestWatchdog(w), 2000); }
       else if (st === 'failed') retryLater(w);
       else if (st === 'disconnected') w.timers.push(setTimeout(() => { if (watch === w && w.pc === pc && pc.connectionState !== 'connected') retryLater(w); }, 6000));
     };
@@ -621,6 +649,22 @@
       // se não conectar em 15 s, tenta de novo
       w.timers.push(setTimeout(() => { if (watch === w && w.pc === pc && pc.connectionState !== 'connected') retryLater(w); }, 15000));
     } catch (e) { console.error(e); retryLater(w); }
+  }
+
+  // vigia a imagem: se o vídeo parar de decodificar enquanto o filme toca (áudio segue), reconecta sozinho
+  async function guestWatchdog(w) {
+    if (watch !== w || !w.pc || w.pc.connectionState !== 'connected') return;
+    try {
+      const rep = await w.pc.getStats();
+      let fd = 0, fps = 0, lost = 0, recv = 0, h = 0;
+      rep.forEach(r => { if (r.type === 'inbound-rtp' && r.kind === 'video') { fd = r.framesDecoded || 0; fps = r.framesPerSecond || 0; lost = r.packetsLost || 0; recv = r.packetsReceived || 0; h = r.frameHeight || 0; } });
+      const playing = !!(w.st && !w.st.p);
+      if (fd !== w.lastFd) { w.lastFd = fd; w.stall = 0; } else if (playing && fd > 0) w.stall = (w.stall || 0) + 1;
+      const pl = (lost + recv) ? Math.round(lost / (lost + recv) * 100) : 0;
+      if (playing && h) tr(els.gstat, (h ? h + 'p' : '') + (fps ? ' · ' + Math.round(fps) + ' fps' : '') + (pl ? ' · perda ' + pl + '%' : ''));
+      else tr(els.gstat, nameOf(w.id) + ' está transmitindo');
+      if (w.stall >= 4) { w.stall = 0; showMsg('Imagem parou. Reconectando...'); retryLater(w); }
+    } catch (e) {}
   }
 
   // enquanto o anfitrião estiver pausado desde o começo, ainda não chega imagem: explica o motivo
