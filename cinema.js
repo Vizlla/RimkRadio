@@ -160,6 +160,7 @@
       '<div class="cin-bar" id="cin-hostbar" hidden>' +
         '<span class="grow"><span class="dot"></span><b>Transmitindo</b> · <span id="cin-file"></span></span>' +
         '<span id="cin-stat"></span>' +
+        '<select id="cin-voice" title="Reforço da voz (canal central de filmes 5.1)"><option value="1">Voz normal</option><option value="1.6" selected>Voz reforçada</option><option value="2.2">Voz muito reforçada</option></select>' +
         '<select id="cin-q" title="Qualidade da transmissão"></select>' +
         '<button type="button" id="cin-swap" title="Trocar de filme">Trocar arquivo</button>' +
         '<button type="button" id="cin-stop" class="stop">Parar</button>' +
@@ -183,10 +184,11 @@
     box.appendChild(layer); box.appendChild(startBtn); box.appendChild(fileInput);
 
     els = { video: $('cin-video'), hostbar: $('cin-hostbar'), guestbar: $('cin-guestbar'), file: $('cin-file'), stat: $('cin-stat'),
-      q: $('cin-q'), ctl: $('cin-ctl'), pp: $('cin-pp'), seek: $('cin-seek'), time: $('cin-time'), msg: $('cin-msg'), msgT: $('cin-msg-t'), sound: $('cin-sound'), gstat: $('cin-gstat'), mute: $('cin-mute'), vol: $('cin-vol'), volp: $('cin-volp') };
+      q: $('cin-q'), voice: $('cin-voice'), ctl: $('cin-ctl'), pp: $('cin-pp'), seek: $('cin-seek'), time: $('cin-time'), msg: $('cin-msg'), msgT: $('cin-msg-t'), sound: $('cin-sound'), gstat: $('cin-gstat'), mute: $('cin-mute'), vol: $('cin-vol'), volp: $('cin-volp') };
     QUALITIES.forEach(q => { const o = document.createElement('option'); o.value = q.key; o.textContent = q.label; els.q.appendChild(o); });
     els.q.value = DEFAULT_Q;
     els.q.addEventListener('change', applyQuality);
+    els.voice.addEventListener('change', () => setVoice());
     $('cin-stop').addEventListener('click', () => { stopHost(); notify('Transmissão encerrada.', 'info'); });
     $('cin-swap').addEventListener('click', pickFile);
     els.sound.addEventListener('click', () => { muted = false; resumeAudio(); els.video.play().catch(() => {}); els.sound.hidden = true; showMsg(''); applyGain(); syncVolUi(); });
@@ -302,15 +304,49 @@
       const src = ac.createMediaElementSource(v);
       const mix = ac.createGain();
       mix.channelCount = 2; mix.channelCountMode = 'explicit'; mix.channelInterpretation = 'speakers';
+      // mistura manual (canais: 0 FL, 1 FR, 2 centro/voz, 3 LFE, 4-5 traseiros, 6-7 laterais), com reforço da voz
+      const split = ac.createChannelSplitter(8);
+      src.connect(split);
+      const L = ac.createGain(), R = ac.createGain();
+      const tap = (from, to, g) => { const n = ac.createGain(); n.gain.value = g; split.connect(n, from); n.connect(to); return n; };
+      tap(0, L, 1); tap(1, R, 1);
+      const cL = tap(2, L, 0), cR = tap(2, R, 0);
+      tap(4, L, 0.6); tap(5, R, 0.6); tap(6, L, 0.6); tap(7, R, 0.6);
+      const monoFix = tap(0, R, 0);   // arquivo mono: copia o canal esquerdo para o direito
+      const merger = ac.createChannelMerger(2);
+      L.connect(merger, 0, 0); R.connect(merger, 0, 1);
+      merger.connect(mix);
+      const meters = []; for (let c = 0; c < 8; c++) { const an = ac.createAnalyser(); an.fftSize = 512; split.connect(an, c); meters.push(an); }
       const comp = ac.createDynamicsCompressor();
       comp.threshold.value = -6; comp.knee.value = 10; comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.2;
       const dest = ac.createMediaStreamDestination();
       dest.channelCount = 2;
       src.connect(mix); mix.connect(ac.destination);   // o anfitrião ouve normalmente
       mix.connect(comp); comp.connect(dest);           // o que vai para a sala (sem estourar)
-      hostAud = { v, ac, dest };
+      hostAud = { v, ac, dest, cL, cR, monoFix, meters, seen: new Array(8).fill(false), monoHits: 0 };
+      setVoice(hostAud);
       return hostAud;
     } catch (e) { console.error(e); return null; }
+  }
+
+  const VOICE = { '1': 1, '1.6': 1.6, '2.2': 2.2 };
+  function setVoice(a) {
+    a = a || hostAud; if (!a) return;
+    const k = (VOICE[(els.voice && els.voice.value) || '1.6'] || 1.6) * 0.7071;
+    a.cL.gain.value = k; a.cR.gain.value = k;
+  }
+  // olha os canais do filme: mostra ao anfitrião se há canal de voz (centro) e corrige arquivo mono
+  function audioProbe() {
+    const a = hostAud; if (!a || !host) return '';
+    const buf = new Float32Array(512);
+    const rms = a.meters.map(an => { an.getFloatTimeDomainData(buf); let t = 0; for (let i = 0; i < buf.length; i++) t += buf[i] * buf[i]; return Math.sqrt(t / buf.length); });
+    rms.forEach((r, i) => { if (r > 2e-4) a.seen[i] = true; });
+    if (rms[0] > 1e-3 && rms[1] < 1e-5) a.monoHits++; else if (rms[1] > 1e-3) a.monoHits = 0;
+    a.monoFix.gain.value = a.monoHits >= 3 ? 1 : 0;
+    const surround = a.seen[2] || a.seen[4] || a.seen[5] || a.seen[6] || a.seen[7];
+    if (!a.seen.some(Boolean)) return 'áudio: aguardando som';
+    if (a.monoHits >= 3) return 'áudio: mono';
+    return surround ? ('áudio: surround · voz (centro) ' + (a.seen[2] ? 'ok' : 'sem sinal')) : 'áudio: estéreo';
   }
 
   async function startHost(file) {
@@ -388,7 +424,8 @@
     let ok = 0; host.peers.forEach(p => { if (p.pc.connectionState === 'connected') ok++; });
     const n = Math.max(0, users().length - 1);
     const t = ok + '/' + n + ' conectados';
-    if (!host.mbps) tr(els.stat, t); else tr(els.stat, t + ' · ↑ ' + host.mbps.toFixed(1).replace('.', ',') + ' Mbps');
+    const ap = audioProbe();
+    tr(els.stat, t + (host.mbps ? ' · ↑ ' + host.mbps.toFixed(1).replace('.', ',') + ' Mbps' : '') + (ap ? ' · ' + ap : ''));
   }
 
   async function hostStats() {
@@ -611,6 +648,7 @@
     if (!host) return;
     const v = host.video;
     syncMainBtn(v.paused || v.ended);
+    hostUi();
     const m = JSON.stringify({ k: 'st', t: v.currentTime || 0, d: Number.isFinite(v.duration) ? v.duration : 0, p: v.paused || v.ended });
     host.peers.forEach(p => { try { if (p.dc && p.dc.readyState === 'open') p.dc.send(m); } catch (e) {} });
   }
