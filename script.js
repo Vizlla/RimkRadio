@@ -1686,6 +1686,10 @@
     }
 
     const liveNow = () => isLiveSong((lastRoom.playlist || [])[lastRoom.currentIndex || 0]);
+    // Estreia / live com barra de progresso (DVR): tem minutagem e é sincronizada como vídeo comum.
+    // Só a live "pura" (sem barra) fica sem minutagem e sempre entra no ao vivo.
+    const hasTimeline = () => { try { return !!(window.YT && ytPlayer && ytPlayer.getDuration() > 0); } catch (e) { return false; } };
+    const noTimeline = () => liveNow() && !hasTimeline();
     // Se o link não avisou que era live, o próprio player entrega: marcamos e passamos a não sincronizar posição.
     let liveCheckTimer = null;
     function checkLiveRuntime() {
@@ -1700,7 +1704,7 @@
                     liveIds.add(id);
                     renderPlaylist(lastRoom.playlist, lastRoom.currentIndex);
                     // entrou numa posição "de vídeo comum": volta para o ao vivo
-                    if (lastRoom.isPlaying) { suppress(4000); ytPlayer.loadVideoById({ videoId: id }); }
+                    if (lastRoom.isPlaying && !((lastRoom.currentTime || 0) >= 1 && hasTimeline())) { suppress(4000); ytPlayer.loadVideoById({ videoId: id }); }
                 }
             } catch (e) {}
         }, 1500);
@@ -1710,7 +1714,7 @@
         if (ytPlayer || !(window.YT && YT.Player)) return;
         ytPlayer = new YT.Player('youtube-player', {
             height: '100%', width: '100%',
-            playerVars: { playsinline: 1, controls: 1, fs: 0, enablejsapi: 1, rel: 0, origin: window.location.origin.startsWith('http') ? window.location.origin : undefined },
+            playerVars: { playsinline: 1, controls: 1, fs: window.RimkStage ? 0 : 1, enablejsapi: 1, rel: 0, origin: window.location.origin.startsWith('http') ? window.location.origin : undefined },
             events: {
                 onReady: () => {
                     playerReady = true;
@@ -1734,7 +1738,7 @@
         const t = ytPlayer.getCurrentTime();
         if (e.data === YT.PlayerState.PLAYING) {
             // a sala já está tocando e a posição bate → nada a avisar (evita "eco" entre aparelhos)
-            const live = liveNow();
+            const live = noTimeline();
             if (lastRoom.isPlaying && (live || Math.abs(t - expectedTime(lastRoom)) < 2.5)) return;
             lastSeekAt = Date.now();
             playback({ isPlaying: true, currentTime: live ? 0 : t });
@@ -1749,7 +1753,7 @@
                 let st; try { st = ytPlayer.getPlayerState(); } catch (err) { return; }
                 if (st !== YT.PlayerState.PAUSED) return;   // voltou a tocar/carregar → era só um seek
                 const pt = ytPlayer.getCurrentTime();
-                const live = liveNow();
+                const live = noTimeline();
                 if (!lastRoom.isPlaying && (live || Math.abs(pt - (lastRoom.currentTime || 0)) < 2.5)) return;
                 playback({ isPlaying: false, currentTime: live ? 0 : pt });
             }, 450);
@@ -1760,7 +1764,7 @@
     let lastPoll = null;
     setInterval(() => {
         if (!playerReady || !ytPlayer || !currentRoomId || !window.YT) return;
-        if (liveNow()) { lastPoll = null; return; }   // live não tem barra de progresso para vigiar
+        if (noTimeline()) { lastPoll = null; return; }   // live sem barra de progresso: nada para vigiar
         let st, t;
         try { st = ytPlayer.getPlayerState(); t = ytPlayer.getCurrentTime(); } catch (err) { return; }
         const now = Date.now();
@@ -1787,7 +1791,7 @@
     window.seekToInput = function () {
         const inp = $('seek-input');
         if (!inp || !currentRoomId || !lastRoom.playlist.length) return;
-        if (liveNow()) return showNotification('Transmissão ao vivo não tem minutagem.', 'info');
+        if (noTimeline()) return showNotification('Transmissão ao vivo sem barra de progresso não tem minutagem.', 'info');
         if (!canControl()) return;
         const t = parseTime(inp.value);
         if (t === null) return showNotification('Digite o minuto assim: 1:30 (min:seg)', 'error');
@@ -1808,12 +1812,12 @@
     function updateSeekUI() {
         const box = $('seek-box');
         if (!box) return;
-        const show = !!currentRoomId && lastRoom.playlist.length > 0 && !liveNow() && !controlsBlocked();
+        const show = !!currentRoomId && lastRoom.playlist.length > 0 && !noTimeline() && !controlsBlocked();
         box.classList.toggle('hidden', !show);
         box.classList.toggle('flex', show);
     }
     setInterval(() => {
-        if (!playerReady || !ytPlayer || !currentRoomId || !window.YT || !lastRoom.isPlaying || liveNow()) return;
+        if (!playerReady || !ytPlayer || !currentRoomId || !window.YT || !lastRoom.isPlaying || noTimeline()) return;
         if (!hostMode() || store.isAdmin()) return;   // só convidados seguem o ponto da sala sozinhos
         const now = Date.now();
         if (now < suppressUntil || now - lastSeekAt < 3000) return;
@@ -1917,7 +1921,8 @@
         const t = expectedTime(data);
         const curId = ytPlayer.getVideoData ? ytPlayer.getVideoData().video_id : null;
 
-        const live = isLiveSong(song);
+        // live comum entra no "ao vivo"; estreia/live em que o anfitrião já escolheu um ponto (currentTime > 0) segue o ponto
+        const live = isLiveSong(song) && !((data.currentTime || 0) >= 1);
         if (curId !== song.videoId) {
             suppress(4000);   // carregar um vídeo novo demora mais que 1,5s para estabilizar
             // live entra sempre no "ao vivo" (sem posição inicial)
