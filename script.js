@@ -1059,6 +1059,7 @@
 
     // Volta para a tela inicial (sair da sala, ser expulso ou fazer logout)
     function leaveRoomUI() {
+        try { if (window.RimkStage) RimkStage.exit(); } catch (e) {}
         try { if (window.RimkFeed) RimkFeed.leave(); } catch (e) {}
         try { store.leave(); } catch (e) {}
         if (unsubRoom) unsubRoom(); if (unsubChat) unsubChat(); if (unsubPresence) unsubPresence(); if (leavePresence) leavePresence();
@@ -1709,7 +1710,7 @@
         if (ytPlayer || !(window.YT && YT.Player)) return;
         ytPlayer = new YT.Player('youtube-player', {
             height: '100%', width: '100%',
-            playerVars: { playsinline: 1, controls: 1, enablejsapi: 1, rel: 0, origin: window.location.origin.startsWith('http') ? window.location.origin : undefined },
+            playerVars: { playsinline: 1, controls: 1, fs: 0, enablejsapi: 1, rel: 0, origin: window.location.origin.startsWith('http') ? window.location.origin : undefined },
             events: {
                 onReady: () => {
                     playerReady = true;
@@ -1735,6 +1736,7 @@
             // a sala já está tocando e a posição bate → nada a avisar (evita "eco" entre aparelhos)
             const live = liveNow();
             if (lastRoom.isPlaying && (live || Math.abs(t - expectedTime(lastRoom)) < 2.5)) return;
+            lastSeekAt = Date.now();
             playback({ isPlaying: true, currentTime: live ? 0 : t });
         } else if (e.data === YT.PlayerState.PAUSED) {
             // Ao arrastar a barra de progresso o YouTube dispara um PAUSED passageiro e logo volta a tocar.
@@ -1766,10 +1768,63 @@
         if (st !== YT.PlayerState.PLAYING && st !== YT.PlayerState.PAUSED) { lastPoll = null; return; }
         if (lastPoll && now >= suppressUntil) {
             const expected = lastPoll.t + (st === YT.PlayerState.PLAYING ? (now - lastPoll.at) / 1000 : 0);
-            if (Math.abs(t - expected) > 1.5) { if (controlsBlocked()) resyncSoon(); else playback({ isPlaying: st === YT.PlayerState.PLAYING, currentTime: t }); }
+            if (Math.abs(t - expected) > 1.5) { if (controlsBlocked()) resyncSoon(); else { lastSeekAt = Date.now(); playback({ isPlaying: st === YT.PlayerState.PLAYING, currentTime: t }); } }
         }
         lastPoll = { t, at: now };
     }, 500);
+
+    /* ---------- Minutagem escolhida por quem controla ----------
+       "1:30", "90" ou "1:02:03" → a sala toda pula para esse ponto (usa o mesmo caminho do play/pause: playback()).
+       Convidados também se ajustam sozinhos se ficarem mais de 3s fora do ponto da sala. */
+    let lastSeekAt = 0;
+    function parseTime(str) {
+        const s = String(str || '').trim();
+        if (!/^\d+(:\d{1,2}){0,2}$/.test(s)) return null;
+        const p = s.split(':').map(Number);
+        if (p.slice(1).some((n) => n > 59)) return null;
+        return p.reduce((acc, n) => acc * 60 + n, 0);
+    }
+    window.seekToInput = function () {
+        const inp = $('seek-input');
+        if (!inp || !currentRoomId || !lastRoom.playlist.length) return;
+        if (liveNow()) return showNotification('Transmissão ao vivo não tem minutagem.', 'info');
+        if (!canControl()) return;
+        const t = parseTime(inp.value);
+        if (t === null) return showNotification('Digite o minuto assim: 1:30 (min:seg)', 'error');
+        let dur = 0; try { dur = ytPlayer.getDuration() || 0; } catch (e) {}
+        if (dur && t > dur - 1) return showNotification('Esse minuto passa do fim do vídeo.', 'error');
+        lastSeekAt = Date.now();
+        suppress();
+        try { if (playerReady && ytPlayer) ytPlayer.seekTo(t, true); } catch (e) {}
+        playback({ isPlaying: lastRoom.isPlaying, currentTime: t });
+        inp.value = '';
+        inp.blur();
+    };
+    window.resyncNow = function () {
+        if (!currentRoomId || !playerReady || !ytPlayer) return;
+        applyPlayback(lastRoom);
+        showNotification('Sincronizado com a sala.', 'success');
+    };
+    function updateSeekUI() {
+        const box = $('seek-box');
+        if (!box) return;
+        const show = !!currentRoomId && lastRoom.playlist.length > 0 && !liveNow() && !controlsBlocked();
+        box.classList.toggle('hidden', !show);
+        box.classList.toggle('flex', show);
+    }
+    setInterval(() => {
+        if (!playerReady || !ytPlayer || !currentRoomId || !window.YT || !lastRoom.isPlaying || liveNow()) return;
+        if (!hostMode() || store.isAdmin()) return;   // só convidados seguem o ponto da sala sozinhos
+        const now = Date.now();
+        if (now < suppressUntil || now - lastSeekAt < 3000) return;
+        try {
+            const song = (lastRoom.playlist || [])[lastRoom.currentIndex || 0];
+            if (!song || ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) return;
+            if ((ytPlayer.getVideoData() || {}).video_id !== song.videoId) return;
+            const want = expectedTime(lastRoom);
+            if (Math.abs(ytPlayer.getCurrentTime() - want) > 3) { suppress(); ytPlayer.seekTo(want, true); }
+        } catch (e) {}
+    }, 4000);
 
     /* ---------- Rádio automática ----------
        Sala de MÚSICA recém-criada já começa tocando uma live sorteada da lista do radio.js (window.RimkLives).
@@ -1883,6 +1938,7 @@
         if (!(window.RimkCinema && RimkCinema.active())) $('play-pause-btn').innerHTML = lastRoom.isPlaying ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play ml-1"></i>';
 
         updateLockUI();
+        updateSeekUI();
         if (lastRoom.category !== currentCat || document.body.dataset.cat !== lastRoom.category) applyRoomCategory(lastRoom.category); else updateCatAdminUI();
         refreshVotes();
         refreshRoomRank(false);   // músicas novas / removidas entram e saem do ranking

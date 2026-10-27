@@ -817,3 +817,36 @@ body[data-cat] #room-view .play-btn { color: #050605; }
 .chip-profile:hover .chip-av { border-color: var(--blue); box-shadow: 0 0 10px rgba(153, 255, 0, .35); }
 .chip-profile:hover #user-chip-name { color: #CCFF66; }
 .chip-profile:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+
+/* ============================================================
+   TELA CHEIA COM CHAT (fullscreen.js)
+   A própria .video-box vira a tela cheia; o painel do chat é levado
+   para #fs-chat-slot, ao lado do vídeo (ou por cima, em telas estreitas).
+   ============================================================ */
+.video-box { --fs-chat-w: clamp(280px, 26vw, 380px); }
+.fs-actions { position: absolute; top: .6rem; right: .6rem; z-index: 30; display: flex; gap: .4rem; opacity: .55; transition: opacity .2s; }
+.fs-actions:hover, .fs-actions:focus-within { opacity: 1; }
+.fs-btn { position: relative; width: 2.2rem; height: 2.2rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid rgba(153, 255, 0, .35); background: rgba(0, 0, 0, .7); color: #E8E8E3; cursor: pointer; font-size: .85rem; }
+.fs-btn:hover { color: var(--blue); border-color: var(--blue); }
+.fs-btn.hidden { display: none; }
+.fs-dot { position: absolute; top: 3px; right: 3px; width: .5rem; height: .5rem; border-radius: 50%; background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+.fs-chat-slot { display: none; }
+
+.video-box.fs-on { background: #000; }
+.video-box.fs-fake { position: fixed !important; inset: 0; z-index: 99999; width: 100vw; height: 100vh; height: 100dvh; max-height: none; aspect-ratio: auto; }
+.video-box.fs-on:fullscreen { width: 100vw; height: 100vh; aspect-ratio: auto; }
+.video-box.fs-on.fs-chat-open { padding-right: var(--fs-chat-w); box-sizing: border-box; }
+.video-box.fs-on.fs-chat-open .fs-actions { right: calc(var(--fs-chat-w) + .6rem); }
+.video-box.fs-on.fs-chat-open .fs-chat-slot { display: block; position: absolute; top: 0; right: 0; bottom: 0; width: var(--fs-chat-w); z-index: 20; }
+.fs-chat-slot .chat-panel { height: 100% !important; max-height: none !important; min-height: 0 !important; border-radius: 0 !important; }
+.video-box.fs-on #youtube-player, .video-box.fs-on #youtube-player iframe { width: 100%; height: 100%; }
+
+/* telas estreitas: o chat cobre parte do vídeo em vez de empurrá-lo */
+@media (max-width: 760px) {
+    .video-box.fs-on.fs-chat-open { padding-right: 0; }
+    .video-box.fs-on.fs-chat-open .fs-actions { right: .6rem; }
+    .video-box.fs-on.fs-chat-open .fs-chat-slot { width: min(340px, 88vw); top: 3.2rem; }
+}
+
+/* campo de minutagem na barra de controles */
+.seek-field { width: 5.2rem; padding: .35rem .6rem !important; font-size: .8rem; text-align: center; }

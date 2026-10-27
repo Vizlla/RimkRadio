@@ -353,10 +353,20 @@
                             <p class="text-sm text-[#8E9A88] mt-2">Adicione uma faixa na playlist ao lado.</p>
                         </div>
                         <div id="youtube-player" class="w-full h-full"></div>
+                        <!-- Tela cheia própria (leva o chat junto): o botão de tela cheia do YouTube fica desligado -->
+                        <div id="fs-chat-slot" class="fs-chat-slot"></div>
+                        <div class="fs-actions">
+                            <button type="button" id="fs-chat-btn" onclick="toggleFsChat()" class="fs-btn hidden" title="Esconder o chat" aria-label="Esconder o chat" aria-pressed="true">
+                                <i class="fa-regular fa-comments"></i><span id="fs-chat-dot" class="fs-dot hidden"></span>
+                            </button>
+                            <button type="button" id="fs-btn" onclick="toggleStageFullscreen()" class="fs-btn" title="Tela cheia (com o chat)" aria-label="Tela cheia com o chat">
+                                <i class="fa-solid fa-expand"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Controles (barra compacta) -->
-                    <div class="controls-bar relative shrink-0 px-4 py-2 bg-[#060906] flex items-center justify-center gap-4 border-t border-white/5">
+                    <div class="controls-bar relative shrink-0 px-4 py-2 bg-[#060906] flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-white/5">
                         <div id="reaction-stage" class="reaction-stage" aria-live="polite"></div>
                         <button type="button" id="like-btn" onclick="voteCurrent(1)" class="vote-btn vote-up" title="Curtir esta música" aria-label="Curtir esta música" aria-pressed="false">
                             <i class="fa-solid fa-thumbs-up" aria-hidden="true"></i><span id="like-count">0</span>
@@ -373,6 +383,14 @@
                         <button type="button" id="dislike-btn" onclick="voteCurrent(-1)" class="vote-btn vote-down" title="Não curti esta música" aria-label="Não curti esta música" aria-pressed="false">
                             <i class="fa-solid fa-thumbs-down" aria-hidden="true"></i><span id="dislike-count">0</span>
                         </button>
+                        <!-- Minutagem: quem controla escolhe o minuto e a sala toda pula para ele -->
+                        <div class="seek-group flex items-center gap-1.5">
+                            <span id="seek-box" class="hidden items-center gap-1.5">
+                                <input type="text" id="seek-input" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="min:seg" aria-label="Minuto do vídeo para levar a sala" title="Ex.: 1:30 ou 1:02:03" class="field seek-field" onkeydown="if(event.key==='Enter'){event.preventDefault();seekToInput();}">
+                                <button type="button" onclick="seekToInput()" class="icon-btn" title="Levar todo mundo para esse minuto" aria-label="Levar todo mundo para esse minuto"><i class="fa-solid fa-forward-fast"></i></button>
+                            </span>
+                            <button type="button" id="resync-btn" onclick="resyncNow()" class="icon-btn" title="Sincronizar com a sala" aria-label="Sincronizar com a sala"><i class="fa-solid fa-rotate"></i></button>
+                        </div>
                     </div>
                 </div>
 
@@ -478,6 +496,7 @@
     <script src="radio.js"></script>
     <script src="feed.js"></script>
     <script src="cinema.js?v=6"></script>
-    <script src="script.js?v=5"></script>
+    <script src="fullscreen.js?v=1"></script>
+    <script src="script.js?v=6"></script>
 </body>
 </html>
