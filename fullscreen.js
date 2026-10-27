@@ -24,6 +24,8 @@
       btn.setAttribute('aria-pressed', String(open));
       const t = open ? 'Esconder o chat' : 'Mostrar o chat';
       btn.title = t; btn.setAttribute('aria-label', t);
+      const ic = btn.querySelector('i');
+      if (ic) ic.className = open ? 'fa-solid fa-chevron-right' : 'fa-regular fa-comments';
     }
     if (open) { const d = $('fs-chat-dot'); if (d) d.classList.add('hidden'); toBottom(); }
   }
@@ -37,10 +39,6 @@
       p.parentNode.insertBefore(home, p);
       slot.appendChild(p);
     }
-    const ic = $('fs-btn') && $('fs-btn').querySelector('i');
-    if (ic) ic.className = 'fa-solid fa-compress';
-    $('fs-btn').title = 'Sair da tela cheia';
-    $('fs-chat-btn').classList.remove('hidden');
     setChat(chatOpen === null ? window.innerWidth >= 900 : chatOpen);
     // mensagem nova com o chat escondido → bolinha no botão
     const msgs = $('chat-messages');
@@ -59,10 +57,6 @@
     if (p && home && home.parentNode) { home.parentNode.insertBefore(p, home); }
     if (home) { home.remove(); home = null; }
     if (b) b.classList.remove('fs-on', 'fs-fake', 'fs-chat-open');
-    const ic = $('fs-btn') && $('fs-btn').querySelector('i');
-    if (ic) ic.className = 'fa-solid fa-expand';
-    if ($('fs-btn')) $('fs-btn').title = 'Tela cheia (com o chat)';
-    if ($('fs-chat-btn')) $('fs-chat-btn').classList.add('hidden');
     if ($('fs-chat-dot')) $('fs-chat-dot').classList.add('hidden');
     toBottom();
   }
