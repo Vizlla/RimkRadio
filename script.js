@@ -742,6 +742,21 @@
             if (error) throw error;
             return voteRow(data);
         };
+        // Likes de perfil: depois de cada voto, avisa o servidor para creditar (ou tirar) 1 like do DONO da música (supabase-perfil.sql)
+        store.creditLike = async (rid, key, owner, on) => {
+            const { error } = await sb.rpc('credit_profile_like', { p_room: String(rid), p_song: String(key), p_owner: String(owner || ''), p_on: !!on });
+            if (error) throw error;
+        };
+        store.profileCard = async (name) => {
+            const { data, error } = await sb.rpc('profile_card', { p_name: String(name || '') });
+            if (error) throw error;
+            const r = Array.isArray(data) ? data[0] : data;
+            return r ? { username: r.username, name: r.display_name || '', bio: r.bio || '', likes: Number(r.likes) || 0 } : null;
+        };
+        store.saveProfile = async (name, bio) => {
+            const { error } = await sb.rpc('set_my_profile', { p_display_name: name, p_bio: bio });
+            if (error) throw error;
+        };
         store.voteCounts = async (rid, key) => {
             const { data, error } = await sb.rpc('song_votes_for', { p_room: rid, p_song: key });
             return error ? null : voteRow(data);
@@ -1383,6 +1398,9 @@
             if (!r) throw new Error('vote');
             if (curKey() === key) { voteState = { key, ...r }; renderVotes(); }
             noteVotes(key, r);
+            // o like vai para o perfil de quem pediu a música (r.mine === 1 = meu voto atual é like; deslike ou voto removido tira o crédito)
+            if (store.creditLike) store.creditLike(currentRoomId, key, song.requester, r.mine === 1)
+                .catch(e => console.warn('Likes do perfil não registrados (rode supabase-perfil.sql):', e && e.message || e));
             const btn = $(val === 1 ? 'like-btn' : 'dislike-btn');
             btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop');
             if (next !== 0) {
@@ -1562,7 +1580,9 @@
         const av = window.RimkAvatar ? (mineName ? myAvatar : RimkAvatar.get(name)) : null;
         col = col || userColors.get(name) || nameColor(name);
         const ini = esc((String(name).trim()[0] || '?').toUpperCase());
-        return `<span class="${cls}${av ? ' has-av' : ''}" style="color:${col};border-color:${col}">${av ? RimkAvatar.html(av) : ini}</span>`;
+        const clickable = store.mode === 'supabase' && String(name || '').trim();     // clicar na fotinha abre o card do perfil
+        const pf = clickable ? ` data-profile="${esc(name)}" role="button" tabindex="0" title="Ver o perfil de ${esc(name)}" aria-label="Ver o perfil de ${esc(name)}"` : '';
+        return `<span class="${cls}${av ? ' has-av' : ''}${clickable ? ' is-clickable' : ''}" style="color:${col};border-color:${col}"${pf}>${av ? RimkAvatar.html(av) : ini}</span>`;
     }
     // busca no servidor o avatar de quem aparece no ranking e ainda não conhecemos (ex.: quem já saiu da sala)
     function avFetch(names) {
@@ -1592,7 +1612,7 @@
             if (currentRoomId) onPresence(roomUsers);
         } catch (e) { console.warn('Não consegui carregar o avatar (rode supabase-avatar.sql):', e && e.message || e); }
     }
-    async function saveMyAvatar(av) {
+    async function saveMyAvatar(av, quiet) {
         const { error } = await store.sb.rpc('set_my_avatar', { p_avatar: av });
         if (error) {
             console.error(error);
@@ -1602,14 +1622,72 @@
         myAvatar = av; RimkAvatar.remember(currentUser, av);
         paintChipAvatar(); store.setAvatar();
         if (currentRoomId) { onPresence(roomUsers); renderRoomRank(); }
-        showNotification('Avatar salvo na sua conta!', 'info');
+        if (!quiet) showNotification('Avatar salvo na sua conta!', 'info');
+        return true;
+    }
+    // Perfil: nome de exibição e bio (o @usuário/login não muda). Só vai ao servidor se algo mudou.
+    let myProfile = { name: '', bio: '' };
+    async function loadMyProfile() {
+        myProfile = { name: '', bio: '' };
+        if (!store.profileCard || !currentUser) return;
+        const who = currentUser;
+        try {
+            const row = await store.profileCard(who);
+            if (currentUser !== who) return;
+            myProfile = row ? { name: row.name, bio: row.bio } : { name: '', bio: '' };
+        } catch (e) { console.warn('Não consegui carregar o perfil (rode supabase-perfil.sql):', e && e.message || e); }
+    }
+    async function saveMyProfile(av, prof) {
+        if (!(await saveMyAvatar(av, true))) return false;
+        const name = clip(String((prof && prof.name) || '').replace(/\s+/g, ' ').trim(), 24);
+        const bio = clip(String((prof && prof.bio) || '').trim(), 160);
+        if (name !== myProfile.name || bio !== myProfile.bio) {
+            try { await store.saveProfile(name, bio); myProfile = { name, bio }; }
+            catch (e) {
+                console.error(e);
+                showNotification('Avatar salvo, mas não consegui salvar nome e bio. O arquivo supabase-perfil.sql já foi rodado no Supabase?', 'error');
+                return false;
+            }
+        }
+        showNotification('Perfil salvo na sua conta!', 'info');
         return true;
     }
     window.openAvatarEditor = function () {
         if (!window.RimkAvatar) return;
         if (store.mode !== 'supabase' || !currentUser) return showNotification('Entre na sua conta para criar o seu avatar.', 'info');
-        RimkAvatar.open({ current: myAvatar, onSave: saveMyAvatar });
+        RimkAvatar.open({ current: myAvatar, profile: myProfile, onSave: saveMyProfile });
     };
+
+    /* ---------- Card do perfil: abre ao clicar na fotinha de alguém (sala, chat e ranking) ---------- */
+    window.openProfileCard = function (name) {
+        if (!window.RimkProfile || store.mode !== 'supabase' || !store.profileCard) return;
+        const nm = String(name || '').trim(); if (!nm) return;
+        const key = nm.toLowerCase();
+        const mine = key === String(clientUsername || '').trim().toLowerCase();
+        const u = roomUsers.find(x => String(x.name).toLowerCase() === key);
+        RimkProfile.open({
+            name: mine ? (currentUser || clientUsername) : (u ? u.name : nm),
+            color: mine ? myColor : ((u && u.color) || userColors.get(nm) || nameColor(nm)),
+            av: mine ? myAvatar : ((u && u.av) || (window.RimkAvatar ? RimkAvatar.get(nm) : null)),
+            role: u ? (u.host ? 'Anfitrião' : (u.cohost ? 'Sub-host' : '')) : '',
+            online: !!u,
+            isMe: mine,
+            mine: mine ? myProfile : null,
+            load: (n) => store.profileCard(n),
+            onEdit: () => openAvatarEditor()
+        });
+    };
+    document.addEventListener('click', (e) => {
+        const t = e.target && e.target.closest ? e.target.closest('[data-profile]') : null;
+        if (!t) return;
+        e.preventDefault();
+        openProfileCard(t.dataset.profile);
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        const t = e.target;
+        if (t && t.matches && t.matches('[data-profile]')) { e.preventDefault(); openProfileCard(t.dataset.profile); }
+    });
 
     /* ---------- Pessoas na sala ---------- */
     function onPresence(list) {
@@ -1663,7 +1741,7 @@
             const crown = u.host ? '<i class="fa-solid fa-crown member-crown" title="Anfitrião"></i>'
                 : (u.cohost ? '<i class="fa-solid fa-crown member-crown cohost" title="Sub-host"></i>' : '');
             return `<div class="member-card" title="${esc(u.name)}">
-                <div class="member-avatar${u.av ? ' has-av' : ''}" style="color:${u.color};border-color:${u.color};box-shadow:0 0 14px ${u.color}44">${(u.av && window.RimkAvatar) ? RimkAvatar.html(u.av) : ini}${crown}</div>
+                <div class="member-avatar is-clickable${u.av ? ' has-av' : ''}" data-profile="${esc(u.name)}" role="button" tabindex="0" title="Ver o perfil de ${esc(u.name)}" aria-label="Ver o perfil de ${esc(u.name)}" style="color:${u.color};border-color:${u.color};box-shadow:0 0 14px ${u.color}44">${(u.av && window.RimkAvatar) ? RimkAvatar.html(u.av) : ini}${crown}</div>
                 <div class="member-name">${esc(u.name)}${mine ? ' <span class="text-[11px] text-[#8E9A88]">(você)</span>' : ''}</div>
                 <div class="member-status"><span></span>${u.host ? 'Anfitrião' : (u.cohost ? 'Sub-host' : 'Online')}</div>
                 ${tools}
@@ -2710,6 +2788,7 @@
         $('auth-pass').value = ''; $('auth-pass2').value = ''; setAuthError('');
         showLoggedIn();
         loadMyAvatar();
+        loadMyProfile();
         if (pendingRoom) { const id = pendingRoom; pendingRoom = null; setTimeout(() => pickRoom(id), 60); }   // clicou numa sala antes de entrar
     }
 
@@ -2762,6 +2841,7 @@
         if (currentRoomId) { try { leaveRoomUI(); } catch (e) {} }
         currentUser = null; pendingRoom = null; store.uid = null;
         myAvatar = null; paintChipAvatar();
+        myProfile = { name: '', bio: '' };
         $('setup-view').classList.add('hidden');
         $('user-chip').classList.add('hidden'); $('user-chip').classList.remove('flex');
         $('auth-view').classList.remove('hidden');

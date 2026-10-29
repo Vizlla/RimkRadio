@@ -3,6 +3,7 @@
    - O avatar é só uma receita pequena: { b: 'rimk', bg: 'rei', i: ['cabelo-julian', 'chapeu-chef'] }
    - Ele é montado empilhando PNGs transparentes (fundo > alien > acessórios), todos 500x500.
    - A receita fica salva na conta (coluna profiles.avatar) e viaja na presença da sala.
+   - O editor também edita o perfil (nome de exibição e bio): quem salva isso é o script.js (função onSave).
    - Tudo que vem de fora (outras pessoas) passa por clean() antes de virar HTML.
    ============================================================ */
 (function () {
@@ -81,9 +82,10 @@
     }
 
     /* ---------- editor: tudo numa tela só (cor, cada categoria e fundo), com atalhos no topo ---------- */
-    const SECS = [{ id: 'cor', label: 'Cor', fa: 'fa-droplet' }]
+    const SECS = [{ id: 'perfil', label: 'Perfil', fa: 'fa-id-card' }, { id: 'cor', label: 'Cor', fa: 'fa-droplet' }]
         .concat(CATALOG.cats.map(c => ({ id: c.id, label: c.label, fa: c.fa })))
         .concat([{ id: 'fundo', label: 'Fundo', fa: 'fa-image' }]);
+    const NAME_MAX = 24, BIO_MAX = 160;
     let root = null, st = null;
 
     function opt(act, id, icon, label, sel, extra) {
@@ -110,7 +112,15 @@
     function panelHTML() {
         const sec = (id, title, hint, inner) =>
             `<section class="av-sec" data-sec="${id}"><h4 class="av-sec-t">${esc(title)}${hint ? `<small>${esc(hint)}</small>` : ''}</h4><p class="av-lock" hidden></p><div class="av-grid">${inner}</div></section>`;
-        return sec('cor', 'Cor do alien', '', CATALOG.bases.map(b => opt('base', b.id, baseIcon(b.id), b.label)).join(''))
+        const perfil = `<section class="av-sec" data-sec="perfil"><h4 class="av-sec-t">Perfil<small>aparece no seu card quando clicam na sua foto</small></h4><p class="av-lock" hidden></p>
+            <div class="pf-form">
+                <label class="pf-lab" for="pf-name-in">Nome de exibição<span id="pf-name-n">0/${NAME_MAX}</span></label>
+                <input id="pf-name-in" class="field" type="text" maxlength="${NAME_MAX}" autocomplete="off" placeholder="Como você quer ser chamado(a)">
+                <label class="pf-lab" for="pf-bio-in">Bio<span id="pf-bio-n">0/${BIO_MAX}</span></label>
+                <textarea id="pf-bio-in" class="field" rows="3" maxlength="${BIO_MAX}" placeholder="Conte algo sobre você…"></textarea>
+                <p class="pf-hint">Seu login (@usuário) continua o mesmo; o nome de exibição aparece só no card do perfil.</p>
+            </div></section>`;
+        return perfil + sec('cor', 'Cor do alien', '', CATALOG.bases.map(b => opt('base', b.id, baseIcon(b.id), b.label)).join(''))
             + CATALOG.cats.map(c => sec(c.id, c.label, c.multi ? 'pode combinar vários' : '',
                 opt('none', c.id, noneIcon, 'Nenhum') + c.items.map(it => opt('item', c.id + '-' + it.id, itemIcon(c, it), it.label)).join(''))).join('')
             + sec('fundo', 'Fundo', '', opt('bg', '', noneIcon, 'Sem fundo') + CATALOG.bgs.map(b => opt('bg', b.id, bgIcon(b.id), b.label)).join(''));
@@ -122,7 +132,7 @@
         root.innerHTML = `
         <div class="panel av-card" role="dialog" aria-modal="true" aria-labelledby="av-title">
             <div class="av-head">
-                <h3 id="av-title" class="font-display text-lg text-white"><i class="fa-solid fa-user-astronaut text-nblue mr-2"></i>Personalize seu avatar</h3>
+                <h3 id="av-title" class="font-display text-lg text-white"><i class="fa-solid fa-user-astronaut text-nblue mr-2"></i>Personalize seu perfil</h3>
                 <button type="button" class="icon-btn" data-act="close" aria-label="Fechar" style="width:2.2rem;height:2.2rem"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="av-body">
@@ -139,11 +149,19 @@
             <div class="av-foot">
                 <button type="button" class="btn btn-blue px-5 py-2.5 text-sm" data-act="close">Cancelar</button>
                 <span id="av-msg" class="av-msg" role="status"></span>
-                <button type="button" class="btn btn-yellow px-5 py-2.5 text-sm" data-act="save"><i class="fa-solid fa-floppy-disk mr-1"></i>Salvar avatar</button>
+                <button type="button" class="btn btn-yellow px-5 py-2.5 text-sm" data-act="save"><i class="fa-solid fa-floppy-disk mr-1"></i>Salvar perfil</button>
             </div>
         </div>`;
         document.body.appendChild(root);
         root.addEventListener('click', onClick);
+        root.addEventListener('input', (e) => {
+            if (!st) return;
+            const t = e.target;
+            if (t.id === 'pf-name-in') st.prof.name = t.value;
+            else if (t.id === 'pf-bio-in') st.prof.bio = t.value;
+            else return;
+            paintCounts();
+        });
         const panel = root.querySelector('#av-panel');
         let raf = 0;
         panel.addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; spy(); }); }, { passive: true });
@@ -205,9 +223,15 @@
             const n = d.i.filter(f => itemInfo.get(f).cat.id === b.dataset.id).length;
             em.hidden = !n; em.textContent = n || '';
         });
-        root.querySelectorAll('[data-act="save"],[data-act="close"],[data-act="random"]').forEach(b => { b.disabled = !!st.busy; });
+        root.querySelectorAll('[data-act="save"],[data-act="close"],[data-act="random"],#pf-name-in,#pf-bio-in').forEach(b => { b.disabled = !!st.busy; });
     }
 
+    function paintCounts() {
+        if (!root || !st) return;
+        const n = root.querySelector('#pf-name-n'), b = root.querySelector('#pf-bio-n');
+        if (n) n.textContent = st.prof.name.length + '/' + NAME_MAX;
+        if (b) b.textContent = st.prof.bio.length + '/' + BIO_MAX;
+    }
     function setMsg(t) { const m = root && root.querySelector('#av-msg'); if (m) m.textContent = t || ''; }
 
     async function onClick(e) {
@@ -219,7 +243,7 @@
         if (act === 'save') {
             st.busy = true; setMsg('Salvando…'); sync();
             let ok = false;
-            try { ok = await st.onSave(clean(d)); } catch (err) { console.error(err); }
+            try { ok = await st.onSave(clean(d), { name: st.prof.name.replace(/\s+/g, ' ').trim().slice(0, NAME_MAX), bio: st.prof.bio.trim().slice(0, BIO_MAX) }); } catch (err) { console.error(err); }
             if (!st) return;              // fechou enquanto salvava
             st.busy = false;
             if (ok) return close();
@@ -258,7 +282,11 @@
     function open(opts) {
         if (!root) build();
         const cur = clean(opts && opts.current);
-        st = { draft: cur || { b: 'rimk', bg: null, i: [] }, busy: false, lock: null, spy: null, onSave: (opts && opts.onSave) || (async () => true) };
+        const pr = (opts && opts.profile) || {};
+        st = { draft: cur || { b: 'rimk', bg: null, i: [] }, prof: { name: String(pr.name || '').slice(0, NAME_MAX), bio: String(pr.bio || '').slice(0, BIO_MAX) }, busy: false, lock: null, spy: null, onSave: (opts && opts.onSave) || (async () => true) };
+        root.querySelector('#pf-name-in').value = st.prof.name;
+        root.querySelector('#pf-bio-in').value = st.prof.bio;
+        paintCounts();
         setMsg(''); sync();
         root.classList.add('open'); root.setAttribute('aria-hidden', 'false');
         root.querySelector('#av-panel').scrollTop = 0;

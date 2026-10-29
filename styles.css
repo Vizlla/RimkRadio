@@ -850,3 +850,37 @@ body[data-cat] #room-view .play-btn { color: #050605; }
 
 /* campo de minutagem na barra de controles */
 .seek-field { width: 5.2rem; padding: .35rem .6rem !important; font-size: .8rem; text-align: center; }
+
+/* ============================================================
+   PERFIL (profile.js): fotinha clicável, card do perfil e campos de nome/bio no editor
+   ============================================================ */
+.is-clickable { cursor: pointer; transition: transform .15s ease, filter .15s ease; }
+.is-clickable:hover { transform: scale(1.08); filter: brightness(1.15); }
+.is-clickable:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+
+.pf-backdrop { z-index: 100000; }
+.pf-card { position: relative; width: min(22rem, 100%); padding: 1.7rem 1.3rem 1.3rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: .9rem; }
+.pf-card > #pf-body { display: flex; flex-direction: column; align-items: center; gap: .9rem; width: 100%; }
+.pf-close { position: absolute; top: .6rem; right: .6rem; }
+.pf-top { display: flex; flex-direction: column; align-items: center; gap: .25rem; width: 100%; min-width: 0; }
+.pf-avatar { width: 6.2rem; height: 6.2rem; border-radius: 9999px; border: 2px solid; display: flex; align-items: center; justify-content: center; margin-bottom: .45rem; background: rgba(2, 4, 2, 0.7); font-weight: 700; font-size: 2.3rem; }
+.pf-avatar.has-av { padding: 0; }
+.pf-name { max-width: 100%; margin: 0; font-size: 1.3rem; font-weight: 700; color: #fff; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-user { display: inline-flex; align-items: center; gap: .4rem; max-width: 100%; font-size: .8rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-dot { width: 6px; height: 6px; border-radius: 9999px; background: #4ADE80; box-shadow: 0 0 6px #4ADE80; flex-shrink: 0; }
+.pf-badge { display: inline-flex; align-items: center; gap: .35rem; margin-top: .15rem; padding: .15rem .6rem; border-radius: 9999px; font-size: .68rem; font-weight: 700; color: var(--blue); border: 1px solid var(--edge); background: rgba(153, 255, 0, .08); }
+.pf-bio { width: 100%; margin: 0; padding: .7rem .85rem; border-radius: 12px; font-size: .85rem; line-height: 1.45; color: #D9E0D4; background: rgba(2, 4, 2, .6); border: 1px solid rgba(255, 255, 255, .06); white-space: pre-wrap; overflow-wrap: anywhere; text-align: left; }
+.pf-bio.is-empty { color: #8E9A88; font-style: italic; text-align: center; }
+.pf-likes { display: inline-flex; align-items: baseline; justify-content: center; gap: .5rem; width: 100%; padding: .65rem .8rem; border-radius: 12px; background: rgba(153, 255, 0, .07); border: 1px solid var(--edge); color: #99FF00; }
+.pf-likes i { font-size: .95rem; align-self: center; filter: drop-shadow(0 0 6px rgba(153, 255, 0, .6)); }
+.pf-likes-n { font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+.pf-likes-l { font-size: .75rem; color: #8E9A88; }
+.pf-note { margin: 0; font-size: .72rem; color: #FFD27A; }
+.pf-edit { width: 100%; }
+
+.pf-form { display: flex; flex-direction: column; gap: .35rem; padding-bottom: .2rem; }
+.pf-lab { display: flex; justify-content: space-between; align-items: baseline; margin-top: .35rem; font-size: .72rem; font-weight: 600; color: #C3CBBE; }
+.pf-lab span { font-weight: 400; color: #8E9A88; font-variant-numeric: tabular-nums; }
+.pf-form .field { box-sizing: border-box; padding: .6rem .8rem; font-size: .85rem; }
+.pf-form textarea.field { resize: none; line-height: 1.4; }
+.pf-hint { margin: .3rem 0 0; font-size: .68rem; color: #8E9A88; }
