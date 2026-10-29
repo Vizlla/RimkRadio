@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teste do card de perfil | RimkRadio</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="tailwind-config.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,400;0,600;0,700;1,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  body { padding: 1.5rem; max-width: 62rem; margin: 0 auto; }
+  .demo-grid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+  @media (min-width: 820px) { .demo-grid { grid-template-columns: 1fr 1fr; } }
+  .members-demo { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.2rem, 1fr)); gap: 1rem .5rem; padding: 1.2rem .6rem .6rem; }
+  .demo-msg { display: flex; gap: .55rem; align-items: flex-start; margin-bottom: .7rem; }
+  .demo-bubble { padding: .45rem .75rem; border-radius: 12px; background: rgba(255,255,255,.06); font-size: .85rem; }
+  .demo-note { font-size: .75rem; color: #8E9A88; }
+</style>
+</head>
+<body>
+  <h1 class="font-display text-2xl text-white mb-1"><i class="fa-solid fa-flask text-nblue mr-2"></i>Teste do card de perfil</h1>
+  <p class="demo-note mb-4">Passe o mouse na fotinha de alguém (ou toque, no celular). Clique/toque fixa o card; clique fora ou <kbd>Esc</kbd> fecha. Os dados abaixo são de mentira (ficam só nesta página).</p>
+
+  <div class="flex flex-wrap gap-2 mb-4" id="tools">
+    <button class="btn btn-blue px-4 py-2 text-xs" id="b-like"><i class="fa-solid fa-thumbs-up mr-1"></i>Curtir a música da Luiza: <span id="b-like-n">desligado</span></button>
+    <button class="btn btn-blue px-4 py-2 text-xs" id="b-redraw"><i class="fa-solid fa-rotate mr-1"></i>Redesenhar a lista (como a presença faz)</button>
+    <button class="btn btn-blue px-4 py-2 text-xs" id="b-slow"><i class="fa-solid fa-hourglass-half mr-1"></i>Servidor lento: <span id="b-slow-n">não</span></button>
+  </div>
+
+  <div class="demo-grid">
+    <section class="panel p-4">
+      <h2 class="text-xs font-semibold uppercase tracking-wide text-[#C3CBBE] mb-3"><i class="fa-solid fa-comments text-nblue mr-2"></i>Chat <span class="demo-note">(sem espaço em cima, o card abre embaixo)</span></h2>
+      <div id="chat"></div>
+    </section>
+    <section class="panel p-4">
+      <h2 class="text-xs font-semibold uppercase tracking-wide text-[#C3CBBE] mb-3"><i class="fa-solid fa-trophy text-nblue mr-2"></i>Ranking de likes</h2>
+      <ul id="rank" class="flex flex-col gap-2"></ul>
+    </section>
+  </div>
+
+  <section class="panel p-4 mt-4" style="margin-top:12rem">
+    <h2 class="text-xs font-semibold uppercase tracking-wide text-[#C3CBBE] mb-1"><i class="fa-solid fa-users text-nblue mr-2"></i>Membros da sessão <span class="demo-note">(aqui o card abre em cima da foto)</span></h2>
+    <div id="members" class="members-demo"></div>
+  </section>
+
+<script src="avatar.js"></script>
+<script src="profile.js"></script>
+<script>
+(function () {
+  'use strict';
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  const ME = 'Matt';
+
+  // "Banco de dados" de mentira (no site de verdade isso vem do Supabase)
+  const DB = {
+    Matt:  { color:'#FF1744', role:'Anfitrião', name:'Matt', bio:'RIMK RIMK RIMK! 🖖 👽', likes:1, av:{ b:'rimk', bg:'cowboy', i:['chapeu-cowboy','bigode-rimk'] } },
+    luiza: { color:'#99FF00', role:'',          name:'Luiza Souza', bio:'Curto vaporwave, café e lives de madrugada.\nPede música boa, por favor.', likes:12, av:{ b:'sahrin', bg:'rimkopolis', i:['fone-fone','olhos-cilios'] } },
+    zeca:  { color:'#00E5FF', role:'Sub-host',  name:'', bio:'', likes:0, av:{ b:'thraak', bg:null, i:['chapeu-chef'] } },
+    nina:  { color:'#FF4DFF', role:'',          name:'Nina', bio:'Bio bem longa para testar o limite do card: ' + 'blá '.repeat(35), likes:1284, av:{ b:'nereids', bg:'nereid', i:['antena-roxa'] } },
+    visitante: { color:'#FFD54A', role:'', name:'', bio:'', likes:0, av:null }
+  };
+  const ONLINE = ['Matt', 'luiza', 'zeca', 'nina', 'visitante'];
+  let likedLuiza = false, slow = false;
+
+  const bubble = (n, cls) => {
+    const u = DB[n], col = u.color, ini = esc(n[0].toUpperCase());
+    return `<span class="${cls} is-clickable${u.av ? ' has-av' : ''}" data-profile="${esc(n)}" role="button" tabindex="0" aria-label="Ver o perfil de ${esc(n)}" style="color:${col};border-color:${col}">${u.av ? RimkAvatar.html(u.av) : ini}</span>`;
+  };
+  function drawMembers() {
+    document.getElementById('members').innerHTML = ONLINE.map(n => {
+      const u = DB[n], mine = n === ME;
+      const crown = u.role === 'Anfitrião' ? '<i class="fa-solid fa-crown member-crown"></i>' : (u.role ? '<i class="fa-solid fa-crown member-crown cohost"></i>' : '');
+      return `<div class="member-card">
+        <div class="member-avatar is-clickable${u.av ? ' has-av' : ''}" data-profile="${esc(n)}" role="button" tabindex="0" aria-label="Ver o perfil de ${esc(n)}" style="color:${u.color};border-color:${u.color};box-shadow:0 0 14px ${u.color}44">${u.av ? RimkAvatar.html(u.av) : esc(n[0].toUpperCase())}${crown}</div>
+        <div class="member-name">${esc(n)}${mine ? ' <span class="text-[11px] text-[#8E9A88]">(você)</span>' : ''}</div>
+        <div class="member-status"><span></span>${u.role || 'Online'}</div></div>`;
+    }).join('');
+  }
+  function drawChat() {
+    const msgs = [['luiza','alguém tem uma live boa pra hoje?'],['Matt','RIMK RIMK RIMK! 🖖'],['nina','acabei de entrar, oi gente 👋']];
+    document.getElementById('chat').innerHTML = msgs.map(([n, t]) =>
+      `<div class="demo-msg">${bubble(n, 'chat-avatar')}<div><div class="text-xs font-semibold" style="color:${DB[n].color}">${esc(n)}</div><div class="demo-bubble">${esc(t)}</div></div></div>`).join('');
+  }
+  function drawRank() {
+    const rows = ['nina', 'luiza', 'Matt'].map(n => ({ n, likes: DB[n].likes })).sort((a, b) => b.likes - a.likes);
+    document.getElementById('rank').innerHTML = rows.map((r, k) =>
+      `<li class="rank-row${k === 0 ? ' is-first' : ''}"><span class="rank-pos">${k + 1}</span>${bubble(r.n, 'rank-av')}<span class="rank-who"><span class="rank-name">${esc(r.n)}</span></span><span class="rank-likes"><i class="fa-solid fa-thumbs-up"></i>${r.likes}</span></li>`).join('');
+  }
+  const redrawAll = () => { drawMembers(); drawChat(); drawRank(); };
+
+  // Abrir o card (mesma lógica do site: hover abre, clique fixa)
+  function openCard(name, anchor, pinned) {
+    const u = DB[name]; if (!u) return;
+    const mine = name === ME;
+    RimkProfile.open({
+      anchor, pinned,
+      name, color: u.color, av: u.av, role: u.role, online: ONLINE.includes(name), isMe: mine,
+      mine: mine ? { name: u.name, bio: u.bio } : null,
+      load: (n) => new Promise(res => setTimeout(() => res({ name: DB[n].name, bio: DB[n].bio, likes: DB[n].likes }), slow ? 1500 : 250)),
+      onEdit: editMe
+    });
+  }
+  const canHover = () => matchMedia('(hover: hover) and (pointer: fine)').matches;
+  let hoverT = null;
+  document.addEventListener('mouseover', (e) => {
+    if (!canHover()) return;
+    const t = e.target.closest && e.target.closest('[data-profile]');
+    if (!t || (e.relatedTarget && t.contains(e.relatedTarget))) return;
+    clearTimeout(hoverT); hoverT = setTimeout(() => openCard(t.dataset.profile, t, false), 250);
+  });
+  document.addEventListener('mouseout', (e) => {
+    const t = e.target.closest && e.target.closest('[data-profile]');
+    if (!t || (e.relatedTarget && t.contains(e.relatedTarget))) return;
+    clearTimeout(hoverT); RimkProfile.leave();
+  });
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest && e.target.closest('[data-profile]'); if (!t) return;
+    e.preventDefault(); clearTimeout(hoverT); openCard(t.dataset.profile, t, true);
+  });
+  document.addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[data-profile]')) { e.preventDefault(); openCard(e.target.dataset.profile, e.target, true); }
+  });
+
+  // Editor do seu perfil (o mesmo do site): salva só aqui na página
+  function editMe() {
+    const u = DB[ME];
+    RimkAvatar.open({
+      current: u.av, profile: { name: u.name, bio: u.bio },
+      onSave: async (av, prof) => { u.av = av; u.name = prof.name; u.bio = prof.bio; RimkProfile.forget(); redrawAll(); return true; }
+    });
+  }
+
+  // Botões de teste
+  document.getElementById('b-like').addEventListener('click', () => {
+    likedLuiza = !likedLuiza; DB.luiza.likes += likedLuiza ? 1 : -1; RimkProfile.forget();
+    document.getElementById('b-like-n').textContent = likedLuiza ? 'ligado (+1)' : 'desligado'; drawRank();
+  });
+  document.getElementById('b-redraw').addEventListener('click', redrawAll);
+  document.getElementById('b-slow').addEventListener('click', () => { slow = !slow; document.getElementById('b-slow-n').textContent = slow ? 'sim (1,5 s)' : 'não'; });
+
+  redrawAll();
+})();
+</script>
+</body>
+</html>

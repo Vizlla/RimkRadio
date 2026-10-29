@@ -1649,6 +1649,7 @@
                 return false;
             }
         }
+        if (window.RimkProfile) RimkProfile.forget();
         showNotification('Perfil salvo na sua conta!', 'info');
         return true;
     }
@@ -1659,13 +1660,14 @@
     };
 
     /* ---------- Card do perfil: abre ao clicar na fotinha de alguém (sala, chat e ranking) ---------- */
-    window.openProfileCard = function (name) {
+    window.openProfileCard = function (name, anchor, pinned) {
         if (!window.RimkProfile || store.mode !== 'supabase' || !store.profileCard) return;
         const nm = String(name || '').trim(); if (!nm) return;
         const key = nm.toLowerCase();
         const mine = key === String(clientUsername || '').trim().toLowerCase();
         const u = roomUsers.find(x => String(x.name).toLowerCase() === key);
         RimkProfile.open({
+            anchor, pinned: !!pinned,
             name: mine ? (currentUser || clientUsername) : (u ? u.name : nm),
             color: mine ? myColor : ((u && u.color) || userColors.get(nm) || nameColor(nm)),
             av: mine ? myAvatar : ((u && u.av) || (window.RimkAvatar ? RimkAvatar.get(nm) : null)),
@@ -1677,16 +1679,34 @@
             onEdit: () => openAvatarEditor()
         });
     };
+    // Mouse: passar por cima abre o card (com um respiro de 250ms para não piscar); sair fecha. Clique/toque fixa o card.
+    // Celular (sem mouse): só o toque abre.
+    const canHover = () => !!(window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches);
+    let hoverT = null;
+    document.addEventListener('mouseover', (e) => {
+        if (!canHover()) return;
+        const t = e.target && e.target.closest ? e.target.closest('[data-profile]') : null;
+        if (!t || (e.relatedTarget && t.contains(e.relatedTarget))) return;
+        clearTimeout(hoverT);
+        hoverT = setTimeout(() => openProfileCard(t.dataset.profile, t, false), 250);
+    });
+    document.addEventListener('mouseout', (e) => {
+        const t = e.target && e.target.closest ? e.target.closest('[data-profile]') : null;
+        if (!t || (e.relatedTarget && t.contains(e.relatedTarget))) return;
+        clearTimeout(hoverT);
+        if (window.RimkProfile) RimkProfile.leave();
+    });
     document.addEventListener('click', (e) => {
         const t = e.target && e.target.closest ? e.target.closest('[data-profile]') : null;
         if (!t) return;
         e.preventDefault();
-        openProfileCard(t.dataset.profile);
+        clearTimeout(hoverT);
+        openProfileCard(t.dataset.profile, t, true);
     });
     document.addEventListener('keydown', (e) => {
         if (e.key !== 'Enter' && e.key !== ' ') return;
         const t = e.target;
-        if (t && t.matches && t.matches('[data-profile]')) { e.preventDefault(); openProfileCard(t.dataset.profile); }
+        if (t && t.matches && t.matches('[data-profile]')) { e.preventDefault(); openProfileCard(t.dataset.profile, t, true); }
     });
 
     /* ---------- Pessoas na sala ---------- */

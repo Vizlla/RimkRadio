@@ -858,25 +858,35 @@ body[data-cat] #room-view .play-btn { color: #050605; }
 .is-clickable:hover { transform: scale(1.08); filter: brightness(1.15); }
 .is-clickable:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
 
-.pf-backdrop { z-index: 100000; }
-.pf-card { position: relative; width: min(22rem, 100%); padding: 1.7rem 1.3rem 1.3rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: .9rem; }
-.pf-card > #pf-body { display: flex; flex-direction: column; align-items: center; gap: .9rem; width: 100%; }
-.pf-close { position: absolute; top: .6rem; right: .6rem; }
-.pf-top { display: flex; flex-direction: column; align-items: center; gap: .25rem; width: 100%; min-width: 0; }
-.pf-avatar { width: 6.2rem; height: 6.2rem; border-radius: 9999px; border: 2px solid; display: flex; align-items: center; justify-content: center; margin-bottom: .45rem; background: rgba(2, 4, 2, 0.7); font-weight: 700; font-size: 2.3rem; }
+/* balão do card: preso na fotinha, abre em cima (ou embaixo se faltar espaço) */
+.pf-pop { position: fixed; z-index: 100000; width: 17.5rem; max-width: calc(100vw - 16px); opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(6px) scale(.97); transform-origin: var(--ax, 50%) 100%; transition: opacity .14s ease, transform .14s ease, visibility 0s .14s; }
+.pf-pop.is-below { transform: translateY(-6px) scale(.97); transform-origin: var(--ax, 50%) 0; }
+.pf-pop.open { opacity: 1; visibility: visible; pointer-events: auto; transform: none; transition-delay: 0s; }
+/* ponte invisível entre a fotinha e o card, para o mouse conseguir passar sem fechar */
+.pf-pop::before { content: ""; position: absolute; left: 0; right: 0; bottom: -14px; height: 14px; }
+.pf-pop.is-below::before { bottom: auto; top: -14px; }
+.pf-pop-in { position: relative; padding: .95rem .95rem .85rem; border-radius: 16px; background: rgba(8, 12, 6, .96); border: 1px solid var(--pf-col, var(--edge)); box-shadow: 0 0 0 1px rgba(0, 0, 0, .5), 0 14px 38px rgba(0, 0, 0, .65), 0 0 22px color-mix(in srgb, var(--pf-col, #99FF00) 22%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.pf-arrow { position: absolute; left: var(--ax, 50%); bottom: -6px; width: 12px; height: 12px; margin-left: -6px; transform: rotate(45deg); background: rgba(8, 12, 6, 1); border-right: 1px solid var(--pf-col, var(--edge)); border-bottom: 1px solid var(--pf-col, var(--edge)); }
+.pf-pop.is-below .pf-arrow { bottom: auto; top: -6px; border: 0; border-left: 1px solid var(--pf-col, var(--edge)); border-top: 1px solid var(--pf-col, var(--edge)); }
+#pf-body { display: flex; flex-direction: column; gap: .7rem; }
+.pf-head { display: flex; align-items: center; gap: .75rem; min-width: 0; }
+.pf-avatar { width: 4.2rem; height: 4.2rem; flex-shrink: 0; border-radius: 9999px; border: 2px solid; display: flex; align-items: center; justify-content: center; background: rgba(2, 4, 2, 0.7); font-weight: 700; font-size: 1.7rem; }
 .pf-avatar.has-av { padding: 0; }
-.pf-name { max-width: 100%; margin: 0; font-size: 1.3rem; font-weight: 700; color: #fff; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pf-user { display: inline-flex; align-items: center; gap: .4rem; max-width: 100%; font-size: .8rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-id { display: flex; flex-direction: column; align-items: flex-start; gap: .15rem; min-width: 0; }
+.pf-name { max-width: 100%; margin: 0; font-size: 1.05rem; font-weight: 700; color: #fff; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-user { display: inline-flex; align-items: center; gap: .4rem; max-width: 100%; font-size: .75rem; font-weight: 600; }
+.pf-at { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pf-dot { width: 6px; height: 6px; border-radius: 9999px; background: #4ADE80; box-shadow: 0 0 6px #4ADE80; flex-shrink: 0; }
-.pf-badge { display: inline-flex; align-items: center; gap: .35rem; margin-top: .15rem; padding: .15rem .6rem; border-radius: 9999px; font-size: .68rem; font-weight: 700; color: var(--blue); border: 1px solid var(--edge); background: rgba(153, 255, 0, .08); }
-.pf-bio { width: 100%; margin: 0; padding: .7rem .85rem; border-radius: 12px; font-size: .85rem; line-height: 1.45; color: #D9E0D4; background: rgba(2, 4, 2, .6); border: 1px solid rgba(255, 255, 255, .06); white-space: pre-wrap; overflow-wrap: anywhere; text-align: left; }
-.pf-bio.is-empty { color: #8E9A88; font-style: italic; text-align: center; }
-.pf-likes { display: inline-flex; align-items: baseline; justify-content: center; gap: .5rem; width: 100%; padding: .65rem .8rem; border-radius: 12px; background: rgba(153, 255, 0, .07); border: 1px solid var(--edge); color: #99FF00; }
-.pf-likes i { font-size: .95rem; align-self: center; filter: drop-shadow(0 0 6px rgba(153, 255, 0, .6)); }
-.pf-likes-n { font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
-.pf-likes-l { font-size: .75rem; color: #8E9A88; }
-.pf-note { margin: 0; font-size: .72rem; color: #FFD27A; }
+.pf-badge { display: inline-flex; align-items: center; gap: .3rem; padding: .1rem .5rem; border-radius: 9999px; font-size: .62rem; font-weight: 700; color: var(--blue); border: 1px solid var(--edge); background: rgba(153, 255, 0, .08); }
+.pf-bio { margin: 0; padding: .55rem .7rem; border-radius: 10px; font-size: .8rem; line-height: 1.4; color: #D9E0D4; background: rgba(2, 4, 2, .6); border: 1px solid rgba(255, 255, 255, .06); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 7.5rem; overflow-y: auto; }
+.pf-bio.is-empty { color: #8E9A88; font-style: italic; }
+.pf-likes { display: flex; align-items: baseline; justify-content: center; gap: .45rem; padding: .5rem .7rem; border-radius: 10px; background: rgba(153, 255, 0, .07); border: 1px solid var(--edge); color: #99FF00; }
+.pf-likes i { font-size: .85rem; align-self: center; filter: drop-shadow(0 0 6px rgba(153, 255, 0, .6)); }
+.pf-likes-n { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+.pf-likes-l { font-size: .7rem; color: #8E9A88; }
+.pf-note { margin: 0; font-size: .68rem; color: #FFD27A; }
 .pf-edit { width: 100%; }
+@media (prefers-reduced-motion: reduce) { .pf-pop { transition: none; } }
 
 .pf-form { display: flex; flex-direction: column; gap: .35rem; padding-bottom: .2rem; }
 .pf-lab { display: flex; justify-content: space-between; align-items: baseline; margin-top: .35rem; font-size: .72rem; font-weight: 600; color: #C3CBBE; }
