@@ -347,6 +347,23 @@
             }
             return { playlist };
         },
+        // Ranking salvo na sala: guarda { idDaMúsica: [dono, likes] } para os likes não sumirem quando alguém sai
+        // ou quando a música sai da fila. Só soma/atualiza (nunca apaga) e guarda no máximo 400 músicas.
+        rank(room, a) {
+            const items = (a && a.items && typeof a.items === 'object') ? a.items : null; if (!items) return null;
+            const log = { ...(room.likeLog || {}) }; let changed = false;
+            for (const id of Object.keys(items).slice(0, 100)) {
+                const it = items[id]; if (!Array.isArray(it)) continue;
+                const by = clip(it[0], 30), up = Math.max(0, Math.min(100000, it[1] | 0));
+                if (!by || !id || id.length > 20) continue;
+                const old = log[id];
+                if (old && old[0] === by && old[1] === up) continue;
+                log[id] = [by, up]; changed = true;
+            }
+            if (!changed) return null;
+            const keys = Object.keys(log); if (keys.length > 400) keys.slice(0, keys.length - 400).forEach(k => delete log[k]);
+            return { likeLog: log };
+        },
         // Limpar fila: apaga as músicas que já tocaram (antes da atual) e mantém a atual e as próximas
         clearQueue(room) {
             const list = room.playlist || [];
@@ -422,6 +439,15 @@
             return true;
         };
     };
+    function sanitizeLikeLog(l) {
+        const out = {}; if (!l || typeof l !== 'object' || Array.isArray(l)) return out;
+        for (const id of Object.keys(l).slice(0, 400)) {
+            const it = l[id]; if (!Array.isArray(it) || id.length > 20) continue;
+            const by = clip(noCtl(String(it[0] || '')), 30).trim(); if (!by) continue;
+            out[id] = [by, Math.max(0, Math.min(100000, Number(it[1]) | 0))];
+        }
+        return out;
+    }
     // nunca confiamos no estado da sala recebido pela rede: valida tudo antes de usar
     function sanitizeRoom(d) {
         d = (d && typeof d === 'object') ? d : {};
@@ -437,6 +463,7 @@
             currentTime: Math.max(0, num(d.currentTime)), playbackUpdated: num(d.playbackUpdated),
             lastUpdated: num(d.lastUpdated), locked: d.locked === true,
             name: clip(noCtl(d.name), 40).trim(),
+            likeLog: sanitizeLikeLog(d.likeLog),
             category: Object.prototype.hasOwnProperty.call(CAT_BY_KEY, d.category) ? d.category : 'musica'
         };
     }
@@ -816,6 +843,7 @@
                     cur = await fetchRow(id);
                 }
             } catch (e) {
+                if (op === 'rank') return;   // salvar o ranking é "de fundo": nunca mostra erro
                 if (/locked|only_host/.test(String(e && e.message))) showNotification('Os anfitriões travaram os controles do player.', 'error');
                 else console.error(e);
             }
@@ -1397,7 +1425,7 @@
             const r = await store.vote(currentRoomId, key, next);
             if (!r) throw new Error('vote');
             if (curKey() === key) { voteState = { key, ...r }; renderVotes(); }
-            noteVotes(key, r);
+            noteVotes(key, r, true);
             // o like vai para o perfil de quem pediu a música (r.mine === 1 = meu voto atual é like; deslike ou voto removido tira o crédito)
             if (store.creditLike) store.creditLike(currentRoomId, key, song.requester, r.mine === 1)
                 .catch(e => console.warn('Likes do perfil não registrados (rode supabase-perfil.sql):', e && e.message || e));
@@ -1456,6 +1484,9 @@
         const seen = new Set();
         pl.forEach(s => { seen.add(s.id); const v = roomVotes.get(s.id); if (v) addUser(s.requester || v.by, v); });
         roomVotes.forEach((v, id) => { if (!seen.has(id)) addUser(v.by, v); });   // músicas que saíram da fila
+        // ranking salvo na sala: músicas que não estão na fila nem no cache (quem já saiu, músicas removidas, outra sessão)
+        const saved = lastRoom.likeLog || {};
+        Object.keys(saved).forEach(id => { if (!seen.has(id) && !roomVotes.has(id)) addUser(saved[id][0], { up: saved[id][1], down: 0 }); });
         const rows = [...byUser.entries()].map(([k, u]) => ({ k, ...u }));
         rows.sort((a, b) => (b.up - a.up) || (a.down - b.down) || a.name.localeCompare(b.name));
         const top = rows.slice(0, RANK_MAX);
@@ -1482,7 +1513,7 @@
             await Promise.all(chunk.map(async (id) => {
                 const r = await store.voteCounts(rid, id).catch(() => null);
                 rankPending.delete(id);
-                if (r && currentRoomId === rid) roomVotes.set(id, { up: r.up, down: r.down, by: ownerOf[id] });
+                if (r && currentRoomId === rid) { roomVotes.set(id, { up: r.up, down: r.down, by: ownerOf[id] }); saveRankLikes([[id, ownerOf[id], r.up]]); }
             }));
             if (currentRoomId !== rid || rankTab !== 'rank') return;
             renderRoomRank();
@@ -1491,11 +1522,35 @@
         renderRoomRank();
     }
     // chamado quando a contagem da música que está tocando muda
-    function noteVotes(key, r) {
-        if (!key || !r || rankRoom !== currentRoomId) return;
+    function noteVotes(key, r, mine) {
+        if (!key || !r || !currentRoomId) return;
+        if (rankRoom !== currentRoomId) { roomVotes.clear(); rankPending.clear(); rankRoom = currentRoomId; rankLoaded = false; }
         const cs = curSong();
-        roomVotes.set(key, { up: r.up, down: r.down, by: cs && cs.id === key ? cs.requester : (roomVotes.get(key) || {}).by });
+        const by = cs && cs.id === key ? cs.requester : (roomVotes.get(key) || {}).by;
+        roomVotes.set(key, { up: r.up, down: r.down, by });
+        saveRankLikes([[key, by, r.up]], mine === true);
         if (rankTab === 'rank') renderRoomRank();
+    }
+    // grava na sala (estado compartilhado) os likes que ainda não estão lá; junta várias gravações numa só
+    let rankSaveQ = {}, rankSaveT = null;
+    function saveRankLikes(list, allowDown) {
+        const saved = lastRoom.likeLog || {};
+        list.forEach(([id, by, up]) => {
+            by = String(by || '').trim(); up = up | 0;
+            if (!id || !by) return;
+            const o = saved[id];
+            // só diminui o salvo quando o próprio usuário tirou o like (se o servidor só devolver 0, o ranking salvo é mantido)
+            if ((o && o[0] === by && (o[1] === up || (up < o[1] && !allowDown))) || (!o && up <= 0)) { delete rankSaveQ[id]; return; }
+            rankSaveQ[id] = [by, up];
+        });
+        if (!Object.keys(rankSaveQ).length || rankSaveT || store.mode !== 'supabase') return;
+        const rid = currentRoomId;
+        rankSaveT = setTimeout(() => {
+            rankSaveT = null;
+            const items = rankSaveQ; rankSaveQ = {};
+            if (currentRoomId !== rid || !Object.keys(items).length) return;
+            store.updateRoom(rid, 'rank', { items }).catch(() => {});
+        }, 1500);
     }
     window.setPlaylistTab = function (tab) {
         rankTab = tab === 'rank' ? 'rank' : 'list';
@@ -2517,6 +2572,13 @@
 
     window.removeSong = async function (idx) {
         if (!currentRoomId || !canControl()) return;
+        try {
+            const sg = (lastRoom.playlist || [])[idx];
+            if (sg && sg.id && store.voteCounts && store.mode === 'supabase') {
+                const r = await store.voteCounts(currentRoomId, sg.id).catch(() => null);
+                if (r && r.up > 0) { roomVotes.set(sg.id, { up: r.up, down: r.down, by: sg.requester }); await store.updateRoom(currentRoomId, 'rank', { items: { [sg.id]: [sg.requester, r.up] } }).catch(() => {}); }
+            }
+        } catch (e) {}
         try { await act('remove', { idx }); }
         catch (e) { console.error(e); }
     };

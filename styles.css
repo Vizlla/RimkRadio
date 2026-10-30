@@ -1008,3 +1008,74 @@ body::before {
 body::after {
     background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--hud) 9%, transparent), transparent);
 }
+
+/* ============================================================
+   RESPONSIVO — celular, tablet e PCs de qualquer tamanho
+   ============================================================ */
+
+/* entalhe do iPhone / barras do sistema */
+.app-shell { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); padding-bottom: env(safe-area-inset-bottom); }
+html { -webkit-text-size-adjust: 100%; }
+body { overscroll-behavior-y: none; }
+img, video, iframe { max-width: 100%; }
+
+/* abas Playlist/Ranking nunca estouram a coluna */
+#room-view .tab { min-width: 0; white-space: nowrap; overflow: hidden; padding-left: .35rem; padding-right: .35rem; }
+
+/* ---------- Celular e tablet (abaixo de 1024px): uma coluna ---------- */
+@media (max-width: 1023px) {
+    .app-main { padding: .75rem; -webkit-overflow-scrolling: touch; }
+    header.panel { margin-left: .75rem !important; margin-right: .75rem !important; margin-top: .75rem !important; padding: .6rem .75rem !important; }
+    /* campos com 16px: o iPhone não dá zoom ao tocar no campo */
+    .field, input, textarea, select { font-size: 16px !important; }
+    .chip { font-size: .75rem; padding: .4rem .65rem; }
+    /* o vídeo é parte da página e rola normal; a playlist e o chat ficam com altura confortável */
+    #room-view .playlist-panel { max-height: none; min-height: 18rem; }
+    #room-view .chat-panel { height: min(70dvh, 34rem) !important; min-height: 20rem !important; }
+    .members-grid { max-height: 12rem; }
+    #search-results { max-height: min(300px, 40dvh); }
+    .panel, .player-frame { background-size: 12px 2px, 2px 12px, 12px 2px, 2px 12px, 12px 2px, 2px 12px, 12px 2px, 2px 12px, 24px 24px, 24px 24px !important; }
+}
+
+/* Celular em pé: o vídeo fica fixo no topo enquanto você rola a playlist e o chat */
+@media (max-width: 700px) and (orientation: portrait) and (min-height: 600px) {
+    #room-view .room-col-center { display: contents; }
+    #room-view .player-frame { position: sticky; top: -.75rem; z-index: 72; }
+    #room-view .members-panel { order: 1; }
+}
+
+/* Celular deitado / telas muito baixas: controles mais compactos */
+@media (max-width: 1023px) and (max-height: 520px) {
+    .video-box { min-height: 180px; }
+    #room-view .chat-panel { height: 85dvh !important; }
+}
+
+/* Toque: alvos de pelo menos 44px */
+@media (pointer: coarse) {
+    .icon-btn { min-width: 2.75rem; min-height: 2.75rem; }
+    .tab, .btn, .chip, button.chip { min-height: 2.75rem; }
+    .reply-btn { opacity: 1; }
+    .song-row button, .rank-row { min-height: 2.75rem; }
+}
+
+/* ---------- PCs pequenos (1024–1279px) ---------- */
+@media (min-width: 1024px) and (max-width: 1279px) {
+    #room-view.room-view { grid-template-columns: minmax(230px, 2.4fr) minmax(0, 5.6fr) minmax(250px, 3fr) !important; gap: .75rem !important; }
+    #room-view .panel-title { font-size: .88rem !important; }
+    #room-view .tab { letter-spacing: .04em; font-size: .68rem; }
+    #room-view .tab i { display: none; }
+    #room-view .playlist-panel .btn { padding-left: .6rem; padding-right: .6rem; font-size: .7rem; letter-spacing: .04em; }
+    #room-view .playlist-panel .field { padding: .6rem .55rem; }
+    .app-main { padding: .75rem; }
+}
+
+/* PC com pouca altura (notebooks 1366x600 etc.): a página rola em vez de cortar */
+@media (min-width: 1024px) and (max-height: 640px) {
+    .app-main { overflow-y: auto; }
+    #room-view.room-view { min-height: 560px; grid-template-rows: minmax(560px, 1fr) !important; }
+}
+
+/* ---------- Telas grandes: tudo cresce junto ---------- */
+@media (min-width: 1920px) { html { font-size: 17px; } .app-main { max-width: 2100px !important; } }
+@media (min-width: 2560px) { html { font-size: 20px; } .app-main { max-width: 2600px !important; } }
+@media (min-width: 3400px) { html { font-size: 26px; } .app-main { max-width: 3300px !important; } }
