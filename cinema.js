@@ -12,6 +12,10 @@
      o campo "cin" (número > 0 = essa pessoa está transmitindo), assim quem entra depois também conecta.
    - TURN opcional: /turn-config.json (gerado no build a partir de TURN_URLS / TURN_USERNAME / TURN_CREDENTIAL).
 
+   ASSISTIR JUNTO (arquivo local nos dois lados): cada pessoa abre o MESMO arquivo no próprio computador e só a
+   sincronia (play / pause / posição) trafega pelo canal da sala. Não passa vídeo pela rede: a qualidade é a do arquivo.
+   Só existe em salas da categoria "Filmes".
+
    Integração: script.js chama open / leave / signal / presence / nonce (veja window.RimkCinema no fim). */
 (function () {
   'use strict';
@@ -38,6 +42,8 @@
   // espectador
   let watch = null;                      // { id, n, pc, retry, timers, stream }
   let quietTimer = null, ytMuted = null, wakeLock = null;
+  let ls = null, lsBtn = null, lsInput = null, helloSent = false;   // assistir junto (arquivo local)
+  let lsV = 1, pend = { sid: '', ids: new Set() };
 
   /* ---------- util ---------- */
   const tr = (el, text) => { if (el) el.textContent = text; };
@@ -152,6 +158,15 @@
   @keyframes cinpulse{50%{opacity:.35}}
   #cin-msg{position:absolute;left:0;right:0;top:0;bottom:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:16px;pointer-events:none;color:#C3CBBE;font-size:14px;text-shadow:0 1px 6px #000}
   #cin-msg[hidden]{display:none}
+  #cin-lstart{position:absolute;left:10px;bottom:10px;z-index:15;display:none;align-items:center;gap:8px;background:rgba(6,9,6,.88);color:var(--blue,#99FF00);border:1px solid var(--blue,#99FF00);border-radius:99px;padding:7px 14px;font:600 13px 'Exo 2',system-ui,sans-serif;cursor:pointer;backdrop-filter:blur(4px);transition:box-shadow .2s,background .2s}
+  #cin-lstart.on{display:inline-flex}
+  #cin-lstart:hover{background:var(--blue,#99FF00);color:#000;box-shadow:0 0 18px color-mix(in srgb,var(--blue,#99FF00) 55%,transparent)}
+  #cin-lsmsg{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:20px;color:#C3CBBE;font-size:14px;text-shadow:0 1px 6px #000;pointer-events:none}
+  #cin-lsmsg[hidden]{display:none}
+  #cin-lsmsg .row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+  #cin-lsmsg button{pointer-events:auto;border:0;border-radius:99px;padding:10px 20px;font:700 14px 'Exo 2',system-ui,sans-serif;cursor:pointer;background:var(--blue,#99FF00);color:#000}
+  #cin-lsmsg button.alt{background:#0d1210;color:#E8E8E3;border:1px solid #2a3626}
+  #cin-lsmsg button[hidden]{display:none}
   #cin-msg button{pointer-events:auto;background:var(--blue,#99FF00);color:#000;border:0;border-radius:99px;padding:10px 20px;font:700 14px 'Exo 2',system-ui,sans-serif;cursor:pointer}
   `;
 
@@ -198,10 +213,42 @@
         '<span class="time" id="cin-volp" style="min-width:38px;text-align:right"></span>' +
         '<button type="button" id="cin-fs" title="Tela cheia"><i class="fa-solid fa-expand"></i></button>' +
       '</div>';
-    box.appendChild(layer); box.appendChild(startBtn); box.appendChild(fileInput);
+    layer.insertAdjacentHTML('beforeend',
+      '<div class="cin-bar" id="cin-lsbar" hidden>' +
+        '<span class="ctl" id="cin-lsctl" hidden>' +
+          '<button type="button" id="cin-lsback" title="Voltar 10 segundos">-10s</button>' +
+          '<button type="button" id="cin-lspp" title="Pausar ou continuar para todos"><i class="fa-solid fa-play"></i></button>' +
+          '<button type="button" id="cin-lsfwd" title="Avançar 10 segundos">+10s</button>' +
+          '<input type="range" id="cin-lsseek" min="0" max="0" step="1" value="0" aria-label="Posição do filme">' +
+        '</span>' +
+        '<span class="grow" id="cin-lsstat"></span>' +
+        '<span class="time" id="cin-lstime"></span>' +
+        '<button type="button" id="cin-lsmute" title="Silenciar"><i class="fa-solid fa-volume-high"></i></button>' +
+        '<input type="range" id="cin-lsvol" min="0" max="1" step="0.02" value="1" aria-label="Volume">' +
+        '<button type="button" id="cin-lsswap" title="Escolher outro arquivo só para você">Trocar meu arquivo</button>' +
+        '<button type="button" id="cin-lsfs" title="Tela cheia"><i class="fa-solid fa-expand"></i></button>' +
+        '<button type="button" id="cin-lsstop" title="Sair só para você">Sair</button>' +
+        '<button type="button" id="cin-lsend" class="stop" title="Encerrar a sessão para todo mundo" hidden>Encerrar para todos</button>' +
+      '</div>' +
+      '<div id="cin-lsmsg" hidden><span id="cin-lsmsg-t"></span>' +
+        '<span class="row"><button type="button" id="cin-lspick">Escolher o arquivo</button>' +
+        '<button type="button" id="cin-lslater" class="alt">Agora não</button>' +
+        '<button type="button" id="cin-lsresume">Continuar</button></span></div>');
+
+    lsBtn = document.createElement('button');
+    lsBtn.id = 'cin-lstart'; lsBtn.type = 'button';
+    lsBtn.innerHTML = '<i class="fa-solid fa-user-group" aria-hidden="true"></i><span>Assistir junto (arquivo local)</span>';
+    lsInput = document.createElement('input');
+    lsInput.type = 'file'; lsInput.accept = 'video/*,.mkv,.mp4,.m4v,.webm,.mov'; lsInput.hidden = true;
+
+    box.appendChild(layer); box.appendChild(startBtn); box.appendChild(fileInput); box.appendChild(lsBtn); box.appendChild(lsInput);
 
     els = { video: $('cin-video'), hostbar: $('cin-hostbar'), guestbar: $('cin-guestbar'), file: $('cin-file'), stat: $('cin-stat'),
       q: $('cin-q'), voice: $('cin-voice'), codec: $('cin-codec'), ctl: $('cin-ctl'), pp: $('cin-pp'), seek: $('cin-seek'), time: $('cin-time'), msg: $('cin-msg'), msgT: $('cin-msg-t'), sound: $('cin-sound'), gstat: $('cin-gstat'), mute: $('cin-mute'), vol: $('cin-vol'), volp: $('cin-volp') };
+    Object.assign(els, { lsbar: $('cin-lsbar'), lsctl: $('cin-lsctl'), lspp: $('cin-lspp'), lsseek: $('cin-lsseek'), lsstat: $('cin-lsstat'),
+      lstime: $('cin-lstime'), lsmute: $('cin-lsmute'), lsvol: $('cin-lsvol'), lsend: $('cin-lsend'), lsmsg: $('cin-lsmsg'), lsmsgT: $('cin-lsmsg-t'),
+      lspick: $('cin-lspick'), lslater: $('cin-lslater'), lsresume: $('cin-lsresume') });
+    lsBind();
     QUALITIES.forEach(q => { const o = document.createElement('option'); o.value = q.key; o.textContent = q.label; els.q.appendChild(o); });
     els.q.value = DEFAULT_Q;
     els.q.addEventListener('change', applyQuality);
@@ -289,10 +336,12 @@
     startBtn.classList.toggle('on', canStart && !host);
     const span = startBtn.querySelector('span');
     tr(span, streamer ? (streamer.name + ' está transmitindo') : 'Transmitir filme');
+    lsButton();
   }
   function layerShow(role) {
     layer.classList.add('on');
     els.hostbar.hidden = role !== 'host';
+    if (els.lsbar) els.lsbar.hidden = !(role === 'local' && ls && ls.url);
     els.guestbar.hidden = role !== 'guest';
     els.video.controls = role === 'host';
     document.body.classList.add('cin-on');
@@ -303,6 +352,9 @@
     layer.classList.remove('on');
     try { els.video.pause(); } catch (e) {}
     els.video.removeAttribute('src'); els.video.srcObject = null; try { els.video.load(); } catch (e) {}
+    try { els.video.playbackRate = 1; } catch (e) {}
+    if (els.lsbar) els.lsbar.hidden = true;
+    if (els.lsmsg) els.lsmsg.hidden = true;
     showMsg('');
     if (document.fullscreenElement && layer.contains(document.fullscreenElement)) document.exitFullscreen().catch(() => {});
     document.body.classList.remove('cin-on');
@@ -376,6 +428,8 @@
 
   async function startHost(file) {
     if (!ctx || !ctx.isAdmin()) return;
+    if (ls && ls.url) return notify('Saia do "Assistir junto" antes de transmitir um filme.', 'error');
+    if (ls) lsClose(true);
     if (users().some(u => u.cin > 0 && u.id !== me())) return notify('Outra pessoa já está transmitindo nesta sala.', 'error');
     if (!window.RTCPeerConnection) return notify('Este navegador não suporta WebRTC.', 'error');
     injectUI();
@@ -584,6 +638,7 @@
 
   function startWatch(id, n) {
     if (host) return;
+    if (ls) lsClose(true);
     if (watch) stopWatch(true);
     injectUI();
     watch = { id, n, pc: null, tries: 0, timers: [], got: false, st: null, dc: null, drag: false, tick: setInterval(updateCtl, 500) };
@@ -705,6 +760,7 @@
     if (b) b.innerHTML = '<i class="fa-solid ' + (paused ? 'fa-play ml-1' : 'fa-pause') + '"></i>';
   }
   function control(k) {
+    if (ls && ls.url) return lsCmd(k);
     if (host) {
       const v = host.video;
       try {
@@ -753,7 +809,12 @@
      ENTRADA / SAÍDA / PRESENÇA
      ============================================================ */
   function onSignal(p) {
-    if (!ctx || !p || typeof p !== 'object' || p.to !== me() || typeof p.from !== 'string') return;
+    if (!ctx || !p || typeof p !== 'object' || typeof p.from !== 'string') return;
+    if (typeof p.t === 'string' && p.t.startsWith('ls-')) {
+      if (p.from === me() || (p.to !== '*' && p.to !== me())) return;
+      return lsOnSignal(p);
+    }
+    if (p.to !== me()) return;
     if (p.t === 'join') return hostOnJoin(p.from);
     if (p.t === 'answer') return hostOnAnswer(p.from, p.sdp);
     if (p.t === 'offer') return guestOnOffer(p.from, p.n, p.sdp);
@@ -765,7 +826,7 @@
 
   function onPresence() {
     if (!ctx) return;
-    refreshButton(); updateCtl();
+    refreshButton(); updateCtl(); lsPresence();
     if (host) {
       // quem saiu da sala não precisa mais de conexão
       const ids = new Set(users().map(u => u.id));
@@ -773,9 +834,342 @@
       hostUi();
       return;
     }
+    if (ls && ls.url) return;
     const s = users().find(u => u.cin > 0 && u.id !== me());
     if (!s) { if (watch) stopWatch(); return; }
     if (!watch || watch.id !== s.id || watch.n !== s.cin) startWatch(s.id, s.cin);
+  }
+
+  /* ============================================================
+     ASSISTIR JUNTO (arquivo local nos dois lados)
+     Cada pessoa abre o MESMO arquivo no próprio computador. Pelo canal da sala só vão mensagens pequenas:
+       ls-open   alguém abriu um filme (nome, tamanho, duração)         -> os outros escolhem o mesmo arquivo
+       ls-ready  "já carreguei o arquivo"                               -> contador "2/2 com o arquivo"
+       ls-st     estado do filme (posição, pausado). Vem de um comando (play/pause/seek) ou de um "batimento"
+                 a cada 2 s do aparelho de referência; quem recebe corrige o próprio vídeo
+       ls-ping / ls-pong  mede a latência até a referência (compensa o atraso da mensagem)
+       ls-unready / ls-end / ls-hello  sair, encerrar para todos, e "quem entrou agora pede o estado"
+     Correção de sincronia: diferença > 1,2 s = pula; entre 0,12 s e 1,2 s = acelera/desacelera 6% até alinhar.
+     ============================================================ */
+  const cut = (s, n) => { s = String(s == null ? '' : s); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+  const fmtSize = (b) => { b = Number(b) || 0; if (b >= 1e9) return (b / 1e9).toFixed(2).replace('.', ',') + ' GB'; if (b >= 1e6) return Math.round(b / 1e6) + ' MB'; return Math.round(b / 1e3) + ' KB'; };
+  const inMovies = () => !ctx || !ctx.category || ctx.category() === 'filmes';
+  const canCtl = (id) => isAdminId(id) || !(ctx && ctx.locked && ctx.locked());   // anfitrião/sub-host, ou todos se a sala não estiver travada
+  const lsAll = (p) => { try { ctx.send(Object.assign({ to: '*', from: me() }, p)); } catch (e) { console.error(e); } };
+  const vDur = () => { const v = els.video; return v && Number.isFinite(v.duration) ? v.duration : 0; };
+
+  // referência = quem manda os batimentos: o dono da sessão se ele estiver na sala com o arquivo; senão o menor id entre quem tem o arquivo
+  function lsRef() {
+    if (!ls) return null;
+    const ids = new Set(users().map(u => u.id));
+    const pool = Array.from(ls.ready).filter(id => ids.has(id) && canCtl(id));
+    if (!pool.length) return null;
+    return pool.includes(ls.owner) ? ls.owner : pool.sort()[0];
+  }
+  const isRef = () => !!ls && lsRef() === me();
+
+  function lsNow() {
+    if (ls && ls.url) { const v = els.video; return { tt: v.currentTime || 0, p: !!(v.paused || v.ended) }; }
+    const r = ls && ls.rem;
+    if (!r) return { tt: 0, p: true };
+    return { tt: r.tt + (r.p ? 0 : (performance.now() - r.at) / 1000), p: r.p };
+  }
+
+  function lsMsg(text, mode) {
+    if (!els.lsmsg) return;
+    els.lsmsg.hidden = !text;
+    tr(els.lsmsgT, text || '');
+    els.lspick.hidden = mode !== 'pick'; els.lslater.hidden = mode !== 'pick'; els.lsresume.hidden = mode !== 'resume';
+  }
+
+  function lsVolUi() {
+    const v = els.video; if (!v || !els.lsmute) return;
+    const m = v.muted || lsV === 0;
+    els.lsmute.innerHTML = '<i class="fa-solid ' + (m ? 'fa-volume-xmark' : 'fa-volume-high') + '"></i>';
+    els.lsvol.value = String(v.muted ? 0 : lsV);
+  }
+
+  function lsBind() {
+    lsInput.addEventListener('change', () => {
+      const f = lsInput.files && lsInput.files[0]; lsInput.value = '';
+      if (!f) return;
+      if (ls) lsAttach(f); else lsCreate(f);
+    });
+    lsBtn.addEventListener('click', () => { if (!lsBtn.disabled) lsInput.click(); });
+    els.lspick.addEventListener('click', () => lsInput.click());
+    els.lslater.addEventListener('click', lsLeave);
+    els.lsresume.addEventListener('click', () => { if (!ls) return; ls.blocked = false; lsMsg(''); lsSync(true); });
+    els.lspp.addEventListener('click', () => lsCmd('toggle'));
+    $('cin-lsback').addEventListener('click', () => lsCmd('back'));
+    $('cin-lsfwd').addEventListener('click', () => lsCmd('fwd'));
+    els.lsseek.addEventListener('input', () => { if (ls) ls.drag = true; tr(els.lstime, fmt(Number(els.lsseek.value)) + ' / ' + fmt(vDur())); });
+    els.lsseek.addEventListener('change', () => { if (ls) ls.drag = false; lsCmd('seek', Number(els.lsseek.value)); });
+    els.lsmute.addEventListener('click', () => { els.video.muted = !els.video.muted; lsVolUi(); });
+    els.lsvol.addEventListener('input', () => { lsV = Number(els.lsvol.value) || 0; els.video.muted = false; els.video.volume = lsV; lsVolUi(); });
+    $('cin-lsswap').addEventListener('click', () => lsInput.click());
+    $('cin-lsfs').addEventListener('click', () => {
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      else if (layer.requestFullscreen) layer.requestFullscreen().catch(() => {});
+    });
+    $('cin-lsstop').addEventListener('click', lsLeave);
+    els.lsend.addEventListener('click', lsEnd);
+    els.video.addEventListener('click', () => { if (ls && ls.url) lsCmd('toggle'); });   // clicar no filme = pausar/continuar (só no modo local)
+  }
+
+  /* ---------- abrir / entrar ---------- */
+  async function lsLoad(file) {
+    const v = els.video;
+    try { v.pause(); } catch (e) {}
+    const url = URL.createObjectURL(file);
+    v.muted = false; v.volume = lsV; v.playbackRate = 1; v.src = url;
+    try {
+      await new Promise((ok, bad) => {
+        const t = setTimeout(() => bad(new Error('timeout')), 20000);
+        v.onloadedmetadata = () => { clearTimeout(t); ok(); };
+        v.onerror = () => { clearTimeout(t); bad(new Error('erro')); };
+      });
+    } catch (e) {
+      URL.revokeObjectURL(url);
+      try { v.removeAttribute('src'); v.load(); } catch (x) {}
+      notify('Não consegui abrir esse arquivo. O navegador toca MP4 (H.264 + AAC) e WebM; converta MKV/HEVC/AC3 antes.', 'error');
+      return false;
+    }
+    v.onerror = null; v.onloadedmetadata = null;
+    if (!ls) { URL.revokeObjectURL(url); try { v.removeAttribute('src'); v.load(); } catch (e) {} return false; }   // a sessão acabou enquanto carregava
+    ls.url = url; ls.ready.add(me());
+    return true;
+  }
+
+  function lsStart() {
+    clearInterval(ls.tick); clearInterval(ls.hb); clearInterval(ls.pg);
+    ls.tick = setInterval(lsTick, 500);
+    ls.hb = setInterval(lsBeat, 2000);
+    ls.pg = setInterval(lsPing, 8000);
+    setTimeout(lsPing, 600);
+  }
+
+  async function lsCreate(file) {
+    if (!ctx) return;
+    if (!inMovies()) return notify('O "Assistir junto" só existe em salas da categoria Filmes.', 'error');
+    if (!canCtl(me())) return notify('Os anfitriões travaram os controles da sala.', 'error');
+    if (host || watch || users().some(u => u.cin > 0)) return notify('Há uma transmissão de filme em andamento nesta sala.', 'error');
+    injectUI();
+    try { const yt = ctx.yt && ctx.yt(); if (yt && yt.pauseVideo) yt.pauseVideo(); } catch (e) {}
+    const sid = Math.random().toString(36).slice(2, 10);
+    ls = { sid, owner: me(), name: cut(file.name, 160), size: file.size, d: 0, url: null, ready: new Set(), rem: null, lat: 0, lastCmdAt: 0, drag: false, dismissed: false, blocked: false, drift: 0 };
+    layerShow('local');
+    lsMsg('Carregando o arquivo...');
+    if (!(await lsLoad(file))) { lsClose(true); return; }
+    ls.d = vDur();
+    ls.rem = { tt: 0, p: true, at: performance.now(), self: true };
+    layerShow('local'); lsMsg(''); lsStart(); lsUi(); lsVolUi();
+    lsAll({ t: 'ls-open', sid, name: ls.name, size: ls.size, d: ls.d, tt: 0, p: true });
+    lsAll({ t: 'ls-ready', sid });
+    refreshButton();
+    notify('Sessão aberta. Peça para a outra pessoa escolher o MESMO arquivo e depois é só dar play.', 'success');
+  }
+
+  async function lsAttach(file) {
+    if (!ls) return;
+    if (file.size !== ls.size && !confirm('Esse arquivo tem tamanho diferente do filme aberto por ' + nameOf(ls.owner) + ' (' + fmtSize(file.size) + ' contra ' + fmtSize(ls.size) + ').\nSe não for exatamente o mesmo arquivo, a sincronia pode ficar errada. Usar mesmo assim?')) return;
+    const s = ls;
+    if (s.url) { try { URL.revokeObjectURL(s.url); } catch (e) {} s.url = null; }
+    layerShow('local'); lsMsg('Carregando o arquivo...');
+    if (!(await lsLoad(file))) { if (ls === s) { lsMsg(nameOf(s.owner) + ' abriu "' + s.name + '". Escolha o mesmo arquivo.', 'pick'); } return; }
+    if (ls !== s) return;
+    s.dismissed = false; s.blocked = false;
+    const d = vDur();
+    if (s.d && d && Math.abs(d - s.d) > 2) notify('A duração desse arquivo é diferente da do filme aberto. A sincronia pode ficar errada.', 'error');
+    layerShow('local'); lsMsg(''); lsStart(); lsUi(); lsVolUi();
+    lsAll({ t: 'ls-ready', sid: s.sid });
+    lsSync(true);
+    refreshButton();
+  }
+
+  // sair só para mim: a sessão continua para os outros
+  function lsLeave() {
+    if (!ls) return;
+    lsAll({ t: 'ls-unready', sid: ls.sid });
+    lsUnload();
+    ls.ready.delete(me()); ls.dismissed = true;
+    refreshButton();
+  }
+  function lsEnd() {
+    if (!ls || !canCtl(me())) return;
+    lsAll({ t: 'ls-end', sid: ls.sid });
+    lsClose(true);
+    notify('Sessão encerrada para todos.', 'info');
+  }
+  function lsUnload() {
+    if (!ls) return;
+    clearInterval(ls.tick); clearInterval(ls.hb); clearInterval(ls.pg); ls.tick = ls.hb = ls.pg = null;
+    if (ls.url) { try { URL.revokeObjectURL(ls.url); } catch (e) {} ls.url = null; }
+    layerHide();
+  }
+  function lsClose(silent) {
+    if (!ls) return;
+    lsUnload(); ls = null;
+    refreshButton();
+  }
+
+  /* ---------- sincronia ---------- */
+  function lsSync(force) {
+    if (!ls || !ls.url || !ls.rem) return;
+    if (!force && isRef()) return;                // a referência não se corrige: ela é quem manda
+    const v = els.video, r = ls.rem;
+    if (v.readyState < 1) return;
+    const lat = r.self ? 0 : ls.lat, lead = (r.self || r.p) ? 0 : 0.25;
+    const dur = vDur() || 1e9;
+    const exp = Math.min(Math.max(0, r.tt + (r.p ? 0 : (performance.now() - r.at) / 1000 + lat)), dur);
+    const diff = v.currentTime - exp;
+    ls.drift = diff;
+    if (r.p) {
+      if (v.playbackRate !== 1) v.playbackRate = 1;
+      if (!v.paused) v.pause();
+      if (Math.abs(diff) > 0.05) { try { v.currentTime = exp; } catch (e) {} }
+      return;
+    }
+    if (Math.abs(diff) > (force ? 0.3 : 1.2)) { try { v.currentTime = Math.min(exp + lead, dur); } catch (e) {} if (v.playbackRate !== 1) v.playbackRate = 1; }
+    else if (Math.abs(diff) > 0.12) v.playbackRate = diff > 0 ? 0.94 : 1.06;      // adiantado: desacelera; atrasado: acelera
+    else if (v.playbackRate !== 1 && Math.abs(diff) < 0.04) v.playbackRate = 1;
+    if (v.paused && !v.ended && !ls.blocked) {
+      const s = ls;
+      v.play().catch(() => { if (ls === s) { s.blocked = true; lsMsg('O navegador bloqueou o play automático. Clique para continuar.', 'resume'); } });
+    }
+  }
+
+  function lsTick() { if (!ls || !ls.url) return; lsSync(false); lsUi(); }
+
+  function lsBeat() {
+    if (!ls || !ls.url || !isRef()) return;
+    const n = lsNow();
+    lsAll({ t: 'ls-st', sid: ls.sid, hb: 1, tt: n.tt, p: n.p, d: vDur() });
+  }
+
+  function lsPing() {
+    if (!ls || !ls.url) return;
+    const r = lsRef(); if (!r || r === me()) return;
+    send(r, { t: 'ls-ping', c: performance.now() });
+  }
+
+  // comando de quem pode controlar (botões, clique no filme, botão grande de play do site)
+  function lsCmd(k, t) {
+    if (!ls || !ls.url) return false;
+    if (!canCtl(me())) { notify('Os anfitriões travaram os controles da sala.', 'info'); return true; }
+    const v = els.video, dur = vDur() || 1e9, cur = v.currentTime || 0;
+    let p = !!(v.paused || v.ended), tt = cur;
+    if (k === 'toggle') p = !p;
+    else if (k === 'play') p = false;
+    else if (k === 'pause') p = true;
+    else if (k === 'fwd') tt = cur + 10;
+    else if (k === 'back') tt = cur - 10;
+    else if (k === 'seek') tt = Number(t) || 0;
+    else return true;
+    tt = Math.min(Math.max(0, tt), dur);
+    if (!p && v.ended) tt = 0;
+    ls.rem = { tt, p, at: performance.now(), self: true };
+    ls.lastCmdAt = performance.now(); ls.blocked = false; lsMsg('');
+    lsSync(true);
+    lsAll({ t: 'ls-st', sid: ls.sid, tt, p, d: vDur() });
+    lsUi();
+    return true;
+  }
+
+  function lsUi() {
+    if (!ls || !ls.url || !els.lsbar) return;
+    const v = els.video, ctl = canCtl(me()), d = vDur() || ls.d || 0;
+    els.lsbar.hidden = false;
+    els.lsctl.hidden = !ctl; els.lsend.hidden = !ctl;
+    tr(els.lstime, fmt(v.currentTime) + (d ? ' / ' + fmt(d) : ''));
+    els.lspp.innerHTML = '<i class="fa-solid ' + (v.paused || v.ended ? 'fa-play' : 'fa-pause') + '"></i>';
+    syncMainBtn(!!(v.paused || v.ended));
+    if (!ls.drag) { els.lsseek.max = String(Math.floor(d)); els.lsseek.value = String(Math.floor(v.currentTime)); }
+    const ids = new Set(users().map(u => u.id)); let n = 0; ls.ready.forEach(id => { if (ids.has(id)) n++; });
+    let sy;
+    if (isRef()) sy = 'você é a referência da sincronia';
+    else if (!ls.rem) sy = 'aguardando';
+    else sy = Math.abs(ls.drift) < 0.15 ? 'sincronizado' : 'ajustando (' + Math.abs(ls.drift).toFixed(1).replace('.', ',') + ' s)';
+    tr(els.lsstat, 'Assistindo junto · ' + cut(ls.name, 40) + ' · ' + n + '/' + users().length + ' com o arquivo · ' + sy);
+  }
+
+  /* ---------- mensagens ---------- */
+  function lsOnSignal(p) {
+    if (!inMovies()) return;
+    const sid = typeof p.sid === 'string' ? p.sid.slice(0, 24) : '';
+    switch (p.t) {
+      case 'ls-hello': {
+        if (!ls) return;
+        if (ls.url) send(p.from, { t: 'ls-ready', sid: ls.sid });
+        if (isRef()) { const n = lsNow(); send(p.from, { t: 'ls-open', sid: ls.sid, name: ls.name, size: ls.size, d: ls.d, tt: n.tt, p: n.p, hello: 1 }); }
+        return;
+      }
+      case 'ls-open': {
+        const size = Number(p.size), d = Number(p.d);
+        if (!sid || !Number.isFinite(size) || size <= 0 || !canCtl(p.from) || host || watch) return;
+        const rem = Number.isFinite(p.tt) ? { tt: Math.max(0, p.tt), p: p.p !== false, at: performance.now() } : null;
+        if (ls && ls.sid === sid) {
+          if (performance.now() - ls.lastCmdAt < 1500) return;   // resposta atrasada logo depois de um comando meu: ignora
+          if (rem && ls.url && !isRef()) { ls.rem = rem; lsSync(true); } else if (rem && !ls.url) ls.rem = rem;
+          return;
+        }
+        if (ls) lsClose(true);
+        ls = { sid, owner: p.from, name: cut(String(p.name || 'filme').replace(/[\u0000-\u001f]/g, ''), 160), size, d: Number.isFinite(d) ? d : 0, url: null, ready: new Set(), rem, lat: 0, lastCmdAt: 0, drag: false, dismissed: false, blocked: false, drift: 0 };
+        if (pend.sid === sid) pend.ids.forEach(id => ls.ready.add(id));
+        injectUI();
+        if (!p.hello) notify(nameOf(p.from) + ' abriu o filme "' + ls.name + '". Escolha o mesmo arquivo para assistir junto.', 'info');
+        layerShow('local');
+        lsMsg(nameOf(p.from) + ' abriu "' + ls.name + '" (' + fmtSize(ls.size) + '). Escolha o mesmo arquivo no seu computador para assistir junto.', 'pick');
+        refreshButton();
+        return;
+      }
+      case 'ls-ready': {
+        if (!sid) return;
+        if (!ls || ls.sid !== sid) { if (pend.sid !== sid) pend = { sid, ids: new Set() }; pend.ids.add(p.from); return; }
+        ls.ready.add(p.from);
+        return;
+      }
+      case 'ls-unready': { if (ls && ls.sid === sid) ls.ready.delete(p.from); return; }
+      case 'ls-end': {
+        if (!ls || ls.sid !== sid || !canCtl(p.from)) return;
+        lsClose(true);
+        notify(nameOf(p.from) + ' encerrou o "Assistir junto".', 'info');
+        return;
+      }
+      case 'ls-st': {
+        if (!ls || ls.sid !== sid || !canCtl(p.from) || !Number.isFinite(p.tt)) return;
+        if (Number.isFinite(p.d) && p.d > 0) ls.d = p.d;
+        if (p.hb && performance.now() - ls.lastCmdAt < 1500) return;   // batimento atrasado logo depois de um comando meu: ignora
+        ls.rem = { tt: Math.max(0, p.tt), p: !!p.p, at: performance.now() };
+        if (ls.url && (!p.hb || !isRef())) lsSync(!p.hb);
+        return;
+      }
+      case 'ls-ping': { if (ls && ls.url && p.to === me() && Number.isFinite(p.c)) send(p.from, { t: 'ls-pong', c: p.c }); return; }
+      case 'ls-pong': {
+        if (!ls || !Number.isFinite(p.c)) return;
+        const rtt = performance.now() - p.c;
+        if (rtt >= 0 && rtt < 4000) ls.lat = Math.min(1.5, ls.lat ? ls.lat * 0.6 + (rtt / 2000) * 0.4 : rtt / 2000);
+        return;
+      }
+    }
+  }
+
+  function lsPresence() {
+    if (helloSent) return;
+    helloSent = true;
+    const c = ctx;
+    setTimeout(() => { if (ctx === c && inMovies()) lsAll({ t: 'ls-hello' }); }, 1500);   // quem entra agora pergunta se já existe sessão
+  }
+
+  function lsButton() {
+    if (!lsBtn) return;
+    if (ls && !inMovies()) { lsClose(true); notify('O "Assistir junto" só funciona em salas de Filmes.', 'info'); return; }
+    let on = false, label = 'Assistir junto (arquivo local)';
+    if (inMovies() && !host && !watch && !(ls && ls.url)) {
+      if (ls) { on = true; label = 'Escolher o arquivo: ' + cut(ls.name, 28); }
+      else if (canCtl(me()) && !users().some(u => u.cin > 0)) on = true;
+    }
+    lsBtn.classList.toggle('on', on);
+    tr(lsBtn.querySelector('span'), label);
   }
 
   window.RimkCinema = {
@@ -785,13 +1179,16 @@
     presence: onPresence,
     refresh: () => { if (ctx) refreshButton(); },
     nonce: () => myNonce,
-    active: () => !!(host || watch),
+    active: () => !!(host || watch || (ls && ls.url)),
     control
   };
   function leave() {
     if (host) stopHost(true);
     if (watch) stopWatch(true);
+    if (ls) { lsUnload(); ls = null; }
+    helloSent = false; pend = { sid: '', ids: new Set() };
     ctx = null; myNonce = 0;
     if (startBtn) startBtn.classList.remove('on');
+    if (lsBtn) lsBtn.classList.remove('on');
   }
 })();

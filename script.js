@@ -705,6 +705,7 @@
                     retrack: () => track(),
                     isAdmin: () => store.isAdmin(),
                     category: () => currentCat,
+                    locked: () => !!(row && row.locked === true),
                     getUsers: () => store.getUsers(),
                     notify: (m, t) => showNotification(m, t),
                     yt: () => ytPlayer
