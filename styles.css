@@ -1080,39 +1080,22 @@ img, video, iframe { max-width: 100%; }
 @media (min-width: 2560px) { html { font-size: 20px; } .app-main { max-width: 2600px !important; } }
 @media (min-width: 3400px) { html { font-size: 26px; } .app-main { max-width: 3300px !important; } }
 
-/* ============================================================
-   PLAYER: o vídeo preenche a aba inteira (sem tarjas pretas nas laterais)
-   O vídeo "cobre" a caixa: se a caixa for mais larga que 16:9, a sobra é cortada em cima
-   (a barra de controles do YouTube, embaixo, continua inteira).
-   ============================================================ */
-.video-box { container-type: size; overflow: hidden; }
-.video-box #youtube-player {
-    position: absolute; left: 50%; bottom: 0; top: auto; transform: translateX(-50%);
-    width: max(100cqw, calc(100cqh * 16 / 9));
-    height: max(100cqh, calc(100cqw * 9 / 16));
-}
-.video-box #youtube-player iframe { width: 100% !important; height: 100% !important; display: block; }
-/* a caixa do vídeo ocupa toda a largura do painel */
-.player-frame .video-box { width: 100%; }
-
-/* PLAYER (ajuste fino): "Membros da sessão" encolhe primeiro, para o vídeo ficar o mais próximo possível de 16:9
-   (assim ele preenche a aba inteira sem cortar quase nada nem deixar tarjas pretas) */
-@media (min-width: 1024px) {
-    #room-view .room-col-center > .player-frame { flex: 0 1 auto; }
-    #room-view .room-col-center > .members-panel { flex: 0 100 auto; min-height: 6.25rem; overflow: hidden; }
-    #room-view .room-col-center .members-grid { max-height: clamp(3.5rem, 12dvh, 13rem); }
-}
-
-/* telas de PC baixas: barra de título e controles do player mais compactas, para sobrar altura para o vídeo */
-@media (min-width: 1024px) and (max-height: 820px) {
-    #room-view .room-col-center > .player-frame > div:first-child { padding-top: .5rem !important; padding-bottom: .4rem !important; }
-    #room-view .room-col-center .controls-bar { padding-top: .35rem !important; padding-bottom: .35rem !important; }
-    #room-view .room-col-center > .members-panel { min-height: 7.75rem; padding-top: .6rem; padding-bottom: .5rem; }
-    #room-view .room-col-center .members-grid { max-height: 5.6rem; }
-    header.panel { padding-top: .45rem !important; padding-bottom: .45rem !important; margin-bottom: .25rem !important; }
-}
-
 /* abas Playlist/Ranking: espaçamento menor em colunas estreitas (o "PLAYLIST" não corta) */
 @media (min-width: 1024px) and (max-width: 1599px) { #room-view .tab { letter-spacing: .05em; font-size: .7rem; } #room-view .tab i { display: none; } }
-/* o corte (quando a caixa é mais larga que 16:9) fica igual em cima e embaixo, não só em cima */
-.video-box:not(.fs-on) #youtube-player { top: 50%; bottom: auto; transform: translate(-50%, -50%); }
+
+/* ============================================================
+   PLAYER mais "quadrado" (4:3): ganha altura e nunca é cortado.
+   O iframe sempre preenche a caixa; o próprio YouTube centraliza o vídeo (sobra, se houver, vira tarja fina).
+   Em telas baixas a caixa encolhe de forma flexível, "Membros" cede espaço primeiro. Nada é cortado.
+   ============================================================ */
+.video-box:not(.fs-on) { aspect-ratio: 4 / 3; container-type: normal; }
+.video-box:not(.fs-on) #youtube-player, .video-box:not(.fs-on) #youtube-player iframe { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
+@media (min-width: 1024px) {
+    #room-view .room-col-center { overflow: hidden; }
+    #room-view .room-col-center > .player-frame { flex: 1 1 auto; min-height: 0; }
+    #room-view .room-col-center .video-box:not(.fs-on) { flex: 1 1 auto; width: 100%; height: auto; min-height: 0; aspect-ratio: 4 / 3; }
+    #room-view .room-col-center > .members-panel { flex: 0 1 auto; min-height: 6.5rem; overflow: hidden; }
+    #room-view .room-col-center .members-grid { max-height: clamp(4rem, 14dvh, 13rem); }
+}
+/* celular deitado: caixa mais larga que alta, nunca maior que a tela */
+@media (max-width: 1023px) and (max-height: 520px) { .video-box:not(.fs-on) { aspect-ratio: 16 / 9; max-height: 82dvh; } }
