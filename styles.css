@@ -1082,31 +1082,3 @@ img, video, iframe { max-width: 100%; }
 
 /* abas Playlist/Ranking: espaçamento menor em colunas estreitas (o "PLAYLIST" não corta) */
 @media (min-width: 1024px) and (max-width: 1599px) { #room-view .tab { letter-spacing: .05em; font-size: .7rem; } #room-view .tab i { display: none; } }
-
-/* ============================================================
-   PAINÉIS REDIMENSIONÁVEIS (layout-resize.js)
-   Barras entre as colunas, entre vídeo e membros e (no celular) embaixo da playlist e do chat.
-   ============================================================ */
-.rv-handle { position: absolute; z-index: 30; display: none; touch-action: none; user-select: none; -webkit-user-select: none; background: transparent; }
-.rv-handle::after { content: ''; position: absolute; inset: 0; margin: auto; background: color-mix(in srgb, var(--hud, #99FF00) 30%, transparent); transition: background .15s, box-shadow .15s; }
-.rv-handle:hover::after, .rv-handle.is-drag::after, .rv-handle:focus-visible::after { background: var(--hud, #99FF00); box-shadow: 0 0 10px color-mix(in srgb, var(--hud, #99FF00) 70%, transparent); }
-.rv-handle:focus-visible { outline: none; }
-.rv-col { width: 14px; cursor: col-resize; }   .rv-col::after { width: 3px; height: 44px; }
-.rv-row { height: 14px; cursor: row-resize; }  .rv-row::after { height: 3px; width: 44px; }
-.rv-dragging, .rv-dragging * { user-select: none !important; -webkit-user-select: none !important; }
-body.rv-dragging-col { cursor: col-resize !important; } body.rv-dragging-row { cursor: row-resize !important; }
-body.rv-dragging-col iframe, body.rv-dragging-row iframe { pointer-events: none; }   /* o vídeo não "rouba" o arraste */
-#rv-reset { cursor: pointer; }
-
-@media (min-width: 1024px) {
-    #room-view.rv-custom { grid-template-columns: var(--rv-cols) !important; }
-    #room-view.rv-mh-custom .room-col-center > .members-panel { flex: 0 0 var(--rv-mh) !important; min-height: 0 !important; overflow: hidden; }
-    #room-view.rv-mh-custom .room-col-center .members-grid { max-height: calc(var(--rv-mh) - 3.4rem); }
-    #room-view.rv-mh-custom .room-col-center > .player-frame { flex: 1 1 auto; min-height: 0; }
-    .rv-handle.rv-desk { display: block; }
-}
-@media (max-width: 1023px) {
-    #room-view.rv-pl-custom .playlist-panel { height: var(--rv-plh) !important; max-height: none !important; min-height: 0 !important; }
-    #room-view.rv-ch-custom .chat-panel { height: var(--rv-chh) !important; max-height: none !important; min-height: 0 !important; }
-    .rv-handle.rv-mob { display: block; }
-}
