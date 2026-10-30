@@ -894,3 +894,93 @@ body[data-cat] #room-view .play-btn { color: #050605; }
 .pf-form .field { box-sizing: border-box; padding: .6rem .8rem; font-size: .85rem; }
 .pf-form textarea.field { resize: none; line-height: 1.4; }
 .pf-hint { margin: .3rem 0 0; font-size: .68rem; color: #8E9A88; }
+
+/* ============================================================
+   RETROFUTURISTA v2 — interface HUD / terminal técnico
+   Tudo reto e quadrado. Cores e fontes continuam as mesmas.
+   (sistema solar da tela de salas mantém a geometria circular)
+   ============================================================ */
+
+/* 1) Cantos 100% quadrados em todo o site (inclui estilos inline, classes Tailwind e CSS injetado por JS) */
+*, *::before, *::after,
+*::-webkit-scrollbar, *::-webkit-scrollbar-track, *::-webkit-scrollbar-thumb {
+    border-radius: 0 !important;
+}
+input::-webkit-slider-thumb, input::-webkit-slider-runnable-track { border-radius: 0 !important; }
+input::-moz-range-thumb, input::-moz-range-track { border-radius: 0 !important; }
+/* exceção: o sistema solar (sol, órbitas e planetas) é geometria, não "aba" */
+.orbit-glow, .orbit-ring, .sun, .planet, .planet img { border-radius: 50% !important; }
+
+/* 2) Painéis: moldura fina + colchetes de canto estilo HUD */
+.panel, .player-frame {
+    --hud: var(--cat, #99FF00);
+    background-image:
+        linear-gradient(var(--hud), var(--hud)), linear-gradient(var(--hud), var(--hud)),
+        linear-gradient(var(--hud), var(--hud)), linear-gradient(var(--hud), var(--hud)),
+        linear-gradient(var(--hud), var(--hud)), linear-gradient(var(--hud), var(--hud)),
+        linear-gradient(var(--hud), var(--hud)), linear-gradient(var(--hud), var(--hud)),
+        linear-gradient(rgba(153,255,0,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(153,255,0,.05) 1px, transparent 1px) !important;
+    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat, repeat !important;
+    background-size:
+        14px 2px, 2px 14px, 14px 2px, 2px 14px,
+        14px 2px, 2px 14px, 14px 2px, 2px 14px,
+        24px 24px, 24px 24px !important;
+    background-position:
+        0 0, 0 0, 100% 0, 100% 0,
+        0 100%, 0 100%, 100% 100%, 100% 100%,
+        0 0, 0 0 !important;
+    border-width: 1px;
+}
+.player-frame { background-image: none !important; border-width: 1px; }
+.player-frame { outline: 1px solid rgba(153,255,0,.25); outline-offset: 5px; }
+/* painéis dentro de outros painéis ficam mais discretos (sem repetir a grade) */
+.panel .panel { background-image: none !important; }
+
+/* 3) Títulos de painel: marcador "//" técnico (só decoração, não altera fonte/cor) */
+.panel-title:not(#current-song-title)::before { content: '//'; opacity: .6; letter-spacing: 0; font-weight: 700; margin-right: .5rem; flex: none; }
+
+/* 4) Abas: blocos retos tipo seletor de terminal */
+.tab {
+    text-transform: uppercase; letter-spacing: .12em; font-size: .78rem;
+    border: 1px solid var(--edge); background: rgba(2,4,2,.6);
+}
+.tab:hover { color: #fff; border-color: rgba(153,255,0,.55); }
+.tab[aria-selected="true"] {
+    background: rgba(153,255,0,.16);
+    border-color: var(--blue);
+    box-shadow: inset 0 -3px 0 var(--blue), 0 0 14px rgba(153,255,0,.25);
+}
+.tab[aria-selected="true"]::before { content: '▸ '; color: var(--blue); }
+
+/* 5) Botões, chips, campos: retos, com borda técnica e rótulo em caixa alta */
+.btn { text-transform: uppercase; letter-spacing: .08em; border: 1px solid transparent; }
+.btn-yellow, .btn-blue { border-color: var(--blue); }
+.btn:hover { transform: none; }
+.btn:active { transform: translate(1px, 1px); }
+.chip { border-color: rgba(153,255,0,.28); background: rgba(2,4,2,.72); letter-spacing: .03em; }
+.icon-btn { border-color: rgba(153,255,0,.28); }
+.field { border-color: rgba(153,255,0,.28); background: rgba(2,4,2,.82); }
+.field:focus { box-shadow: 0 0 0 1px var(--blue), 0 0 18px rgba(153,255,0,.25); }
+.play-btn { box-shadow: 0 0 0 1px var(--blue), 0 0 0 6px rgba(153,255,0,.10), 0 0 30px rgba(153,255,0,.5); }
+
+/* 6) Avatares / miniaturas / cartões do chat: quadrados com borda reta */
+.av, .av-lg, .av-preview, .av-preview .av, .rank-av, .chip-av, .member-avatar, .pf-avatar { border-radius: 0 !important; }
+.pf-pop-in { border-width: 1px; box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 0 0 4px rgba(153,255,0,.10), 0 14px 38px rgba(0,0,0,.65); }
+.song-row, .room-item, .msg { border-left-width: 2px; }
+
+/* 7) Rolagem retangular fina */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,.35); border-left: 1px solid rgba(153,255,0,.12); }
+::-webkit-scrollbar-thumb { background: rgba(153,255,0,.4); border: 1px solid rgba(153,255,0,.7); }
+
+/* 8) Foco por teclado: caixa reta */
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* 9) Seleção de texto e detalhes de cabeçalho */
+header.panel { border-bottom: 2px solid rgba(153,255,0,.55); }
+.horizon { opacity: .55; }
+
+@media (prefers-reduced-motion: reduce) {
+    .btn:active { transform: none; }
+}
