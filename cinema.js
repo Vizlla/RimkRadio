@@ -43,7 +43,7 @@
   let watch = null;                      // { id, n, pc, retry, timers, stream }
   let quietTimer = null, ytMuted = null, wakeLock = null;
   let ls = null, lsBtn = null, lsInput = null, helloSent = false;   // assistir junto (arquivo local)
-  let lsV = 1, pend = { sid: '', ids: new Set() };
+  let lsV = 1, pend = { sid: '', ids: new Set() }, subInput = null;
 
   /* ---------- util ---------- */
   const tr = (el, text) => { if (el) el.textContent = text; };
@@ -167,6 +167,9 @@
   #cin-lsmsg button{pointer-events:auto;border:0;border-radius:99px;padding:10px 20px;font:700 14px 'Exo 2',system-ui,sans-serif;cursor:pointer;background:var(--blue,#99FF00);color:#000}
   #cin-lsmsg button.alt{background:#0d1210;color:#E8E8E3;border:1px solid #2a3626}
   #cin-lsmsg button[hidden]{display:none}
+  #cin-layer video::cue{background:rgba(0,0,0,.68);color:#fff;font-family:'Exo 2',system-ui,sans-serif;line-height:1.25}
+  .cin-bar .subgrp{display:inline-flex;align-items:center;gap:6px}
+  .cin-bar .subgrp[hidden]{display:none}
   #cin-msg button{pointer-events:auto;background:var(--blue,#99FF00);color:#000;border:0;border-radius:99px;padding:10px 20px;font:700 14px 'Exo 2',system-ui,sans-serif;cursor:pointer}
   `;
 
@@ -225,6 +228,13 @@
         '<span class="time" id="cin-lstime"></span>' +
         '<button type="button" id="cin-lsmute" title="Silenciar"><i class="fa-solid fa-volume-high"></i></button>' +
         '<input type="range" id="cin-lsvol" min="0" max="1" step="0.02" value="1" aria-label="Volume">' +
+        '<button type="button" id="cin-lssub" title="Carregar legenda (.srt ou .vtt) só para você"><i class="fa-solid fa-closed-captioning"></i> Legenda</button>' +
+        '<span class="subgrp" id="cin-lssubgrp" hidden>' +
+          '<button type="button" id="cin-lssubm" title="Legenda aparece mais cedo (-0,5 s)">-0,5s</button>' +
+          '<span class="time" id="cin-lssubo"></span>' +
+          '<button type="button" id="cin-lssubp" title="Legenda aparece mais tarde (+0,5 s)">+0,5s</button>' +
+          '<button type="button" id="cin-lssubx" title="Remover a legenda">✕</button>' +
+        '</span>' +
         '<button type="button" id="cin-lsswap" title="Escolher outro arquivo só para você">Trocar meu arquivo</button>' +
         '<button type="button" id="cin-lsfs" title="Tela cheia"><i class="fa-solid fa-expand"></i></button>' +
         '<button type="button" id="cin-lsstop" title="Sair só para você">Sair</button>' +
@@ -240,8 +250,10 @@
     lsBtn.innerHTML = '<i class="fa-solid fa-user-group" aria-hidden="true"></i><span>Assistir junto (arquivo local)</span>';
     lsInput = document.createElement('input');
     lsInput.type = 'file'; lsInput.accept = 'video/*,.mkv,.mp4,.m4v,.webm,.mov'; lsInput.hidden = true;
+    subInput = document.createElement('input');
+    subInput.type = 'file'; subInput.accept = '.srt,.vtt,text/vtt,application/x-subrip,text/plain'; subInput.hidden = true;
 
-    box.appendChild(layer); box.appendChild(startBtn); box.appendChild(fileInput); box.appendChild(lsBtn); box.appendChild(lsInput);
+    box.appendChild(layer); box.appendChild(startBtn); box.appendChild(fileInput); box.appendChild(lsBtn); box.appendChild(lsInput); box.appendChild(subInput);
 
     els = { video: $('cin-video'), hostbar: $('cin-hostbar'), guestbar: $('cin-guestbar'), file: $('cin-file'), stat: $('cin-stat'),
       q: $('cin-q'), voice: $('cin-voice'), codec: $('cin-codec'), ctl: $('cin-ctl'), pp: $('cin-pp'), seek: $('cin-seek'), time: $('cin-time'), msg: $('cin-msg'), msgT: $('cin-msg-t'), sound: $('cin-sound'), gstat: $('cin-gstat'), mute: $('cin-mute'), vol: $('cin-vol'), volp: $('cin-volp') };
@@ -913,6 +925,11 @@
     });
     $('cin-lsstop').addEventListener('click', lsLeave);
     els.lsend.addEventListener('click', lsEnd);
+    $('cin-lssub').addEventListener('click', () => { if (ls && ls.url) subInput.click(); });
+    subInput.addEventListener('change', () => { const f = subInput.files && subInput.files[0]; subInput.value = ''; if (f) lsSubLoad(f); });
+    $('cin-lssubm').addEventListener('click', () => lsSubShift(-0.5));
+    $('cin-lssubp').addEventListener('click', () => lsSubShift(0.5));
+    $('cin-lssubx').addEventListener('click', () => { lsSubClear(); notify('Legenda removida.', 'info'); });
     els.video.addEventListener('click', () => { if (ls && ls.url) lsCmd('toggle'); });   // clicar no filme = pausar/continuar (só no modo local)
   }
 
@@ -974,6 +991,7 @@
     if (file.size !== ls.size && !confirm('Esse arquivo tem tamanho diferente do filme aberto por ' + nameOf(ls.owner) + ' (' + fmtSize(file.size) + ' contra ' + fmtSize(ls.size) + ').\nSe não for exatamente o mesmo arquivo, a sincronia pode ficar errada. Usar mesmo assim?')) return;
     const s = ls;
     if (s.url) { try { URL.revokeObjectURL(s.url); } catch (e) {} s.url = null; }
+    lsSubClear();
     layerShow('local'); lsMsg('Carregando o arquivo...');
     if (!(await lsLoad(file))) { if (ls === s) { lsMsg(nameOf(s.owner) + ' abriu "' + s.name + '". Escolha o mesmo arquivo.', 'pick'); } return; }
     if (ls !== s) return;
@@ -1004,6 +1022,7 @@
     if (!ls) return;
     clearInterval(ls.tick); clearInterval(ls.hb); clearInterval(ls.pg); ls.tick = ls.hb = ls.pg = null;
     if (ls.url) { try { URL.revokeObjectURL(ls.url); } catch (e) {} ls.url = null; }
+    lsSubClear();
     layerHide();
   }
   function lsClose(silent) {
@@ -1080,6 +1099,7 @@
     const v = els.video, ctl = canCtl(me()), d = vDur() || ls.d || 0;
     els.lsbar.hidden = false;
     els.lsctl.hidden = !ctl; els.lsend.hidden = !ctl;
+    const sg = $('cin-lssubgrp'); if (sg) { sg.hidden = !ls.subs; tr($('cin-lssubo'), ((ls.subOff || 0) > 0 ? '+' : '') + String(ls.subOff || 0).replace('.', ',') + ' s'); }
     tr(els.lstime, fmt(v.currentTime) + (d ? ' / ' + fmt(d) : ''));
     els.lspp.innerHTML = '<i class="fa-solid ' + (v.paused || v.ended ? 'fa-play' : 'fa-pause') + '"></i>';
     syncMainBtn(!!(v.paused || v.ended));
@@ -1090,6 +1110,72 @@
     else if (!ls.rem) sy = 'aguardando';
     else sy = Math.abs(ls.drift) < 0.15 ? 'sincronizado' : 'ajustando (' + Math.abs(ls.drift).toFixed(1).replace('.', ',') + ' s)';
     tr(els.lsstat, 'Assistindo junto · ' + cut(ls.name, 40) + ' · ' + n + '/' + users().length + ' com o arquivo · ' + sy);
+  }
+
+
+  /* ---------- legenda local (.srt / .vtt): cada pessoa carrega a sua; o filme já está sincronizado, então ela acompanha ---------- */
+  const subTime = (a) => {
+    const m = /^(?:(\d+):)?(\d{1,2}):(\d{2})[,.](\d{1,3})$/.exec(String(a).trim());
+    return m ? (+(m[1] || 0)) * 3600 + (+m[2]) * 60 + (+m[3]) + Number((m[4] + '00').slice(0, 3)) / 1000 : null;
+  };
+  const vttTime = (x) => {
+    let t = Math.round(Math.max(0, x) * 1000); const ms = t % 1000; t = (t - ms) / 1000;
+    const sec = t % 60; t = (t - sec) / 60; const min = t % 60, h = (t - min) / 60;
+    const z = (n, w) => String(n).padStart(w, '0');
+    return z(h, 2) + ':' + z(min, 2) + ':' + z(sec, 2) + '.' + z(ms, 3);
+  };
+  function parseSubs(text) {
+    const cues = [];
+    String(text).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').split(/\n{2,}/).forEach(block => {
+      const lines = block.split('\n'), i = lines.findIndex(l => l.includes('-->'));
+      if (i < 0) return;
+      const parts = lines[i].split('-->');
+      const a = subTime(parts[0]), b = subTime(String(parts[1]).trim().split(/\s+/)[0]);
+      if (a == null || b == null) return;
+      const t = lines.slice(i + 1).join('\n').replace(/\{\\[^}]*\}/g, '').replace(/<(?!\/?[ibu]>)[^>]*>/gi, '').replace(/&(?!(amp|lt|gt|nbsp);)/g, '&amp;').trim();
+      if (t) cues.push({ s: a, e: b, t });
+    });
+    return cues;
+  }
+  function lsSubDrop() {
+    if (!ls) return;
+    if (ls.subEl) { try { ls.subEl.remove(); } catch (e) {} ls.subEl = null; }
+    if (ls.subUrl) { try { URL.revokeObjectURL(ls.subUrl); } catch (e) {} ls.subUrl = null; }
+  }
+  function lsSubClear() { if (!ls) return; lsSubDrop(); ls.subs = null; ls.subOff = 0; }
+  function lsSubApply() {
+    if (!ls || !ls.subs || !els.video) return;
+    const off = ls.subOff || 0;
+    let out = 'WEBVTT\n\n';
+    ls.subs.forEach(c => { const a = c.s + off, b = c.e + off; if (b > 0) out += vttTime(a) + ' --> ' + vttTime(b) + '\n' + c.t + '\n\n'; });
+    lsSubDrop();
+    const url = URL.createObjectURL(new Blob([out], { type: 'text/vtt' }));
+    const el = document.createElement('track');
+    el.kind = 'subtitles'; el.label = 'Legenda'; el.srclang = 'pt'; el.default = true; el.src = url;
+    els.video.appendChild(el);
+    ls.subUrl = url; ls.subEl = el;
+    try { for (const t of els.video.textTracks) t.mode = (el.track && t === el.track) ? 'showing' : 'disabled'; } catch (e) {}
+  }
+  function lsSubShift(d) {
+    if (!ls || !ls.subs) return;
+    ls.subOff = Math.round(((ls.subOff || 0) + d) * 10) / 10;
+    lsSubApply(); lsUi();
+  }
+  async function lsSubLoad(file) {
+    if (!ls || !ls.url) return;
+    if (/\.(ass|ssa|sub|idx)$/i.test(file.name)) return notify('Esse formato de legenda não é suportado. Use .srt ou .vtt (dá para converter .ass/.ssa em sites como subtitletools).', 'error');
+    if (file.size > 5e6) return notify('Esse arquivo de legenda é grande demais (máx. 5 MB). Confira se é mesmo uma legenda .srt ou .vtt.', 'error');
+    let buf;
+    try { buf = await file.arrayBuffer(); } catch (e) { return notify('Não consegui ler o arquivo de legenda.', 'error'); }
+    let text;
+    try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); }          // a maioria está em UTF-8
+    catch (e) { try { text = new TextDecoder('windows-1252').decode(buf); } catch (x) { text = new TextDecoder().decode(buf); } }   // .srt antigo em ANSI: acentos corretos
+    const cues = parseSubs(text);
+    if (!ls || !ls.url) return;
+    if (!cues.length) return notify('Não encontrei falas nesse arquivo. Use uma legenda .srt ou .vtt.', 'error');
+    ls.subs = cues; ls.subOff = 0;
+    lsSubApply(); lsUi();
+    notify('Legenda carregada (' + cues.length + ' falas). Só você vê essa legenda; cada pessoa carrega a sua.', 'success');
   }
 
   /* ---------- mensagens ---------- */
