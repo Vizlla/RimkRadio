@@ -1084,18 +1084,29 @@ img, video, iframe { max-width: 100%; }
 @media (min-width: 1024px) and (max-width: 1599px) { #room-view .tab { letter-spacing: .05em; font-size: .7rem; } #room-view .tab i { display: none; } }
 
 /* ============================================================
-   PLAYER mais "quadrado" (4:3): ganha altura e nunca é cortado.
-   O iframe sempre preenche a caixa; o próprio YouTube centraliza o vídeo (sobra, se houver, vira tarja fina).
-   Em telas baixas a caixa encolhe de forma flexível, "Membros" cede espaço primeiro. Nada é cortado.
+   PAINÉIS REDIMENSIONÁVEIS (layout-resize.js)
+   Barras entre as colunas, entre vídeo e membros e (no celular) embaixo da playlist e do chat.
    ============================================================ */
-.video-box:not(.fs-on) { aspect-ratio: 4 / 3; container-type: normal; }
-.video-box:not(.fs-on) #youtube-player, .video-box:not(.fs-on) #youtube-player iframe { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
+.rv-handle { position: absolute; z-index: 30; display: none; touch-action: none; user-select: none; -webkit-user-select: none; background: transparent; }
+.rv-handle::after { content: ''; position: absolute; inset: 0; margin: auto; background: color-mix(in srgb, var(--hud, #99FF00) 30%, transparent); transition: background .15s, box-shadow .15s; }
+.rv-handle:hover::after, .rv-handle.is-drag::after, .rv-handle:focus-visible::after { background: var(--hud, #99FF00); box-shadow: 0 0 10px color-mix(in srgb, var(--hud, #99FF00) 70%, transparent); }
+.rv-handle:focus-visible { outline: none; }
+.rv-col { width: 14px; cursor: col-resize; }   .rv-col::after { width: 3px; height: 44px; }
+.rv-row { height: 14px; cursor: row-resize; }  .rv-row::after { height: 3px; width: 44px; }
+.rv-dragging, .rv-dragging * { user-select: none !important; -webkit-user-select: none !important; }
+body.rv-dragging-col { cursor: col-resize !important; } body.rv-dragging-row { cursor: row-resize !important; }
+body.rv-dragging-col iframe, body.rv-dragging-row iframe { pointer-events: none; }   /* o vídeo não "rouba" o arraste */
+#rv-reset { cursor: pointer; }
+
 @media (min-width: 1024px) {
-    #room-view .room-col-center { overflow: hidden; }
-    #room-view .room-col-center > .player-frame { flex: 1 1 auto; min-height: 0; }
-    #room-view .room-col-center .video-box:not(.fs-on) { flex: 1 1 auto; width: 100%; height: auto; min-height: 0; aspect-ratio: 4 / 3; }
-    #room-view .room-col-center > .members-panel { flex: 0 1 auto; min-height: 6.5rem; overflow: hidden; }
-    #room-view .room-col-center .members-grid { max-height: clamp(4rem, 14dvh, 13rem); }
+    #room-view.rv-custom { grid-template-columns: var(--rv-cols) !important; }
+    #room-view.rv-mh-custom .room-col-center > .members-panel { flex: 0 0 var(--rv-mh) !important; min-height: 0 !important; overflow: hidden; }
+    #room-view.rv-mh-custom .room-col-center .members-grid { max-height: calc(var(--rv-mh) - 3.4rem); }
+    #room-view.rv-mh-custom .room-col-center > .player-frame { flex: 1 1 auto; min-height: 0; }
+    .rv-handle.rv-desk { display: block; }
 }
-/* celular deitado: caixa mais larga que alta, nunca maior que a tela */
-@media (max-width: 1023px) and (max-height: 520px) { .video-box:not(.fs-on) { aspect-ratio: 16 / 9; max-height: 82dvh; } }
+@media (max-width: 1023px) {
+    #room-view.rv-pl-custom .playlist-panel { height: var(--rv-plh) !important; max-height: none !important; min-height: 0 !important; }
+    #room-view.rv-ch-custom .chat-panel { height: var(--rv-chh) !important; max-height: none !important; min-height: 0 !important; }
+    .rv-handle.rv-mob { display: block; }
+}
