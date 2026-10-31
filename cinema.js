@@ -100,6 +100,10 @@
   #cin-video{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:contain;background:#000}
   #cin-video::cue{background:rgba(0,0,0,.68);color:#fff;font-family:'Exo 2',system-ui,sans-serif;line-height:1.25}
 
+  #cin-sub{position:absolute;left:0;right:0;bottom:26px;z-index:2;display:flex;justify-content:center;padding:0 6%;pointer-events:none;transition:bottom .25s}
+  #cin-layer:not(.idle) #cin-sub{bottom:104px}
+  #cin-sub span{display:inline-block;max-width:100%;padding:2px 12px;border-radius:6px;background:rgba(0,0,0,.62);color:#fff;text-align:center;line-height:1.3;font-weight:600;font-size:clamp(16px,2.2vh + .7vw,38px);text-shadow:0 1px 4px #000;white-space:pre-line}
+  #cin-sub:empty{display:none}
   .cin-top,.cin-ui{position:absolute;left:0;right:0;z-index:3;transition:opacity .25s}
   .cin-top{top:0;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:12px 16px 38px;background:linear-gradient(rgba(0,0,0,.78),rgba(0,0,0,0));pointer-events:none}
   .cin-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:15px;text-shadow:0 1px 6px #000}
@@ -172,6 +176,7 @@
     layer.id = 'cin-layer';
     layer.innerHTML =
       '<video id="cin-video" playsinline preload="auto"></video>' +
+      '<div id="cin-sub" aria-live="off"></div>' +
       '<div class="cin-top"><span class="cin-title" id="cin-title"></span>' +
         '<span class="cin-chip" id="cin-chip"><i class="led" id="cin-led"></i><span id="cin-chip-t"></span></span></div>' +
       '<div id="cin-msg" hidden><div class="cin-card"><i class="fa-solid fa-film cin-ico" aria-hidden="true"></i>' +
@@ -232,7 +237,7 @@
 
     box.appendChild(layer); box.appendChild(lsGrp); box.appendChild(lsInput); box.appendChild(subInput);
 
-    const ids = ['video', 'title', 'chip', 'led', 'chip-t', 'msg', 'msg-t', 'msg-s', 'pick', 'resume', 'new', 'later', 'ui', 'cur', 'dur', 'seek', 'back', 'pp', 'fwd', 'mute', 'vol', 'sync', 'cc', 'menubtn', 'fs', 'menu', 'm-sub', 'm-subt', 'm-subrow', 'subm', 'subo', 'subp', 'subx', 'm-swap', 'm-new', 'm-leave', 'm-end'];
+    const ids = ['video', 'sub', 'title', 'chip', 'led', 'chip-t', 'msg', 'msg-t', 'msg-s', 'pick', 'resume', 'new', 'later', 'ui', 'cur', 'dur', 'seek', 'back', 'pp', 'fwd', 'mute', 'vol', 'sync', 'cc', 'menubtn', 'fs', 'menu', 'm-sub', 'm-subt', 'm-subrow', 'subm', 'subo', 'subp', 'subx', 'm-swap', 'm-new', 'm-leave', 'm-end'];
     els = {};
     ids.forEach(k => { els[k.replace(/-(\w)/g, (m, c) => c.toUpperCase())] = $('cin-' + k); });
     bind();
@@ -684,7 +689,18 @@
     });
     return cues;
   }
+  function subShow(track) {
+    if (!els.sub) return;
+    els.sub.textContent = '';
+    let cues; try { cues = track && track.activeCues ? Array.from(track.activeCues) : []; } catch (e) { cues = []; }
+    cues.forEach(c => {
+      const sp = document.createElement('span');
+      try { sp.appendChild(c.getCueAsHTML()); } catch (e) { sp.textContent = c.text; }
+      els.sub.appendChild(sp);
+    });
+  }
   function lsSubDrop() {
+    if (els.sub) els.sub.textContent = '';
     if (!ls) return;
     if (ls.subEl) { try { ls.subEl.remove(); } catch (e) {} ls.subEl = null; }
     if (ls.subUrl) { try { URL.revokeObjectURL(ls.subUrl); } catch (e) {} ls.subUrl = null; }
@@ -701,7 +717,11 @@
     el.kind = 'subtitles'; el.label = 'Legenda'; el.srclang = 'pt'; el.default = true; el.src = url;
     els.video.appendChild(el);
     ls.subUrl = url; ls.subEl = el;
-    try { for (const t of els.video.textTracks) t.mode = (el.track && t === el.track) ? 'showing' : 'disabled'; } catch (e) {}
+    // a legenda é desenhada por nós (#cin-sub), acima dos controles; o desenho nativo do navegador fica desligado
+    try {
+      for (const t of els.video.textTracks) t.mode = (el.track && t === el.track) ? 'hidden' : 'disabled';
+      if (el.track) { el.track.addEventListener('cuechange', () => subShow(el.track)); }
+    } catch (e) {}
   }
   function lsSubShift(d) {
     if (!ls || !ls.subs) return;
