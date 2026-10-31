@@ -30,7 +30,7 @@
   let subSize = 'm', loadSeq = 0, lsV = 1, lastAct = 0, overUi = false, menuOpen = false, idleAtDown = false, bound = false;
   try { const ss = localStorage.getItem('cinSubSize'); if (ss === 's' || ss === 'm' || ss === 'l') subSize = ss; } catch (e) {}
   // proporção da imagem (só para quem assiste, cada um tem o seu arquivo): auto = a do próprio filme
-  const AR_MODES = { auto: 0, '169': 16 / 9, '43': 4 / 3, '219': 21 / 9, '185': 1.85, fill: -1 };
+  const AR_MODES = { auto: 0, '169': 16 / 9, '43': 4 / 3, '219': 21 / 9, fill: -1 };
   let arMode = 'auto', arObs = null;
   try { const am = localStorage.getItem('cinAspect'); if (am && Object.prototype.hasOwnProperty.call(AR_MODES, am)) arMode = am; } catch (e) {}
   try { const sv = parseFloat(localStorage.getItem('cinVol')); if (sv >= 0 && sv <= 1) lsV = sv; } catch (e) {}
