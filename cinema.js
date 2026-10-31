@@ -29,6 +29,10 @@
   let wakeLock = null, quietTimer = null, ytMuted = null;
   let subSize = 'm', loadSeq = 0, lsV = 1, lastAct = 0, overUi = false, menuOpen = false, idleAtDown = false, bound = false;
   try { const ss = localStorage.getItem('cinSubSize'); if (ss === 's' || ss === 'm' || ss === 'l') subSize = ss; } catch (e) {}
+  // proporção da imagem (só para quem assiste, cada um tem o seu arquivo): auto = a do próprio filme
+  const AR_MODES = { auto: 0, '169': 16 / 9, '43': 4 / 3, '219': 21 / 9, '185': 1.85, fill: -1 };
+  let arMode = 'auto', arObs = null;
+  try { const am = localStorage.getItem('cinAspect'); if (am && Object.prototype.hasOwnProperty.call(AR_MODES, am)) arMode = am; } catch (e) {}
   try { const sv = parseFloat(localStorage.getItem('cinVol')); if (sv >= 0 && sv <= 1) lsV = sv; } catch (e) {}
 
   /* ---------- util ---------- */
@@ -222,6 +226,12 @@
           '<button type="button" class="cin-s" id="cin-sz-s" title="Legenda pequena">Pequena</button>' +
           '<button type="button" class="cin-s" id="cin-sz-m" title="Legenda média">Média</button>' +
           '<button type="button" class="cin-s" id="cin-sz-l" title="Legenda grande">Grande</button></span></div>' +
+        '<div class="cin-mrow" id="cin-m-arrow"><span>Proporção da tela</span><span class="cin-grp">' +
+          '<button type="button" class="cin-s" id="cin-ar-auto" title="Usa a proporção original do filme">Auto</button>' +
+          '<button type="button" class="cin-s" id="cin-ar-169" title="Forçar 16:9">16:9</button>' +
+          '<button type="button" class="cin-s" id="cin-ar-43" title="Forçar 4:3">4:3</button>' +
+          '<button type="button" class="cin-s" id="cin-ar-219" title="Forçar 21:9">21:9</button>' +
+          '<button type="button" class="cin-s" id="cin-ar-fill" title="Preencher a tela (corta as bordas)">Preencher</button></span></div>' +
         '<div class="cin-sep"></div>' +
         '<button type="button" class="cin-mi" id="cin-m-swap"><i class="fa-solid fa-file-video"></i><span>Trocar meu arquivo</span></button>' +
         '<button type="button" class="cin-mi" id="cin-m-new"><i class="fa-solid fa-clapperboard"></i><span>Abrir outro filme para a sala</span></button>' +
@@ -246,7 +256,7 @@
 
     box.appendChild(layer); box.appendChild(lsGrp); box.appendChild(lsInput); box.appendChild(subInput);
 
-    const ids = ['video', 'sub', 'title', 'chip', 'led', 'chip-t', 'msg', 'msg-t', 'msg-s', 'pick', 'resume', 'new', 'later', 'ui', 'cur', 'dur', 'seek', 'back', 'pp', 'fwd', 'mute', 'vol', 'sync', 'cc', 'menubtn', 'fs', 'menu', 'm-sub', 'm-subt', 'm-subrow', 'm-sizerow', 'sz-s', 'sz-m', 'sz-l', 'subm', 'subo', 'subp', 'subx', 'm-swap', 'm-new', 'm-leave', 'm-end'];
+    const ids = ['video', 'sub', 'title', 'chip', 'led', 'chip-t', 'msg', 'msg-t', 'msg-s', 'pick', 'resume', 'new', 'later', 'ui', 'cur', 'dur', 'seek', 'back', 'pp', 'fwd', 'mute', 'vol', 'sync', 'cc', 'menubtn', 'fs', 'menu', 'm-sub', 'm-subt', 'm-subrow', 'm-sizerow', 'sz-s', 'sz-m', 'sz-l', 'ar-auto', 'ar-169', 'ar-43', 'ar-219', 'ar-fill', 'subm', 'subo', 'subp', 'subx', 'm-swap', 'm-new', 'm-leave', 'm-end'];
     els = {};
     ids.forEach(k => { els[k.replace(/-(\w)/g, (m, c) => c.toUpperCase())] = $('cin-' + k); });
     bind();
@@ -291,6 +301,12 @@
     subInput.addEventListener('change', () => { const f = subInput.files && subInput.files[0]; subInput.value = ''; if (f) lsSubLoad(f); });
     ['s', 'm', 'l'].forEach(k => els['sz' + k.toUpperCase()].addEventListener('click', () => setSubSize(k)));
     layer.dataset.sub = subSize;
+    Object.keys(AR_MODES).forEach(k => els['ar' + (k === 'auto' || k === 'fill' ? k[0].toUpperCase() + k.slice(1) : k)].addEventListener('click', () => setAspect(k)));
+    ['loadedmetadata', 'loadeddata', 'resize', 'emptied'].forEach(ev => els.video.addEventListener(ev, fitVideo));
+    window.addEventListener('resize', fitVideo);
+    document.addEventListener('fullscreenchange', () => { fitVideo(); setTimeout(fitVideo, 150); });
+    if (window.ResizeObserver) { arObs = new ResizeObserver(fitVideo); arObs.observe(layer); }
+    setAspect(arMode, true);
     els.subm.addEventListener('click', () => lsSubShift(-0.5));
     els.subp.addEventListener('click', () => lsSubShift(0.5));
     els.subx.addEventListener('click', () => { lsSubClear(); lsUi(); notify('Legenda removida.', 'info'); });
@@ -701,6 +717,27 @@
     });
     return cues;
   }
+  // Encaixa a imagem na tela respeitando a proporção (nunca esticada). Em "auto" usa a proporção real do arquivo;
+  // nas outras, a escolhida (corrige arquivos com proporção errada no cabeçalho). "Preencher" cobre a tela cortando as bordas.
+  function fitVideo() {
+    const v = els && els.video; if (!v || !layer) return;
+    const W = layer.clientWidth, H = layer.clientHeight, vw = v.videoWidth, vh = v.videoHeight;
+    const st = v.style, m = AR_MODES[arMode];
+    if (!W || !H || !vw || !vh) { st.cssText = ''; return; }
+    if (m < 0) { st.cssText = 'left:0;top:0;width:100%;height:100%;object-fit:cover'; return; }
+    const r = m > 0 ? m : vw / vh;
+    let w = W, h = W / r;
+    if (h > H) { h = H; w = H * r; }
+    st.cssText = 'left:' + ((W - w) / 2).toFixed(2) + 'px;top:' + ((H - h) / 2).toFixed(2) + 'px;width:' + w.toFixed(2) + 'px;height:' + h.toFixed(2) + 'px;object-fit:fill';
+  }
+  function setAspect(k, silent) {
+    if (!Object.prototype.hasOwnProperty.call(AR_MODES, k)) k = 'auto';
+    arMode = k;
+    if (!silent) { try { localStorage.setItem('cinAspect', k); } catch (e) {} }
+    Object.keys(AR_MODES).forEach(x => { const b = els['ar' + (x === 'auto' || x === 'fill' ? x[0].toUpperCase() + x.slice(1) : x)]; if (b) b.classList.toggle('act', x === k); });
+    fitVideo();
+  }
+
   function setSubSize(k) {
     subSize = k; if (layer) layer.dataset.sub = k;
     try { localStorage.setItem('cinSubSize', k); } catch (e) {}
