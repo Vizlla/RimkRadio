@@ -22,7 +22,7 @@ const out = path.join(__dirname, 'dist');
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 
-for (const f of ['index.html', 'script.js', 'avatar.js', 'profile.js', 'radio.js', 'feed.js', 'cinema.js', 'fullscreen.js', 'styles.css', 'tailwind-config.js', 'logo.png', 'logo-text.png', 'logo-zunk.svg', 'logo-alien.png', 'rimk-like.png', 'zunk-dislike.png']) {
+for (const f of ['index.html', 'script.js', 'avatar.js', 'profile.js', 'radio.js', 'feed.js', 'cinema.js', 'fullscreen.js', 'halloween.js', 'halloween.css', 'styles.css', 'tailwind-config.js', 'logo.png', 'logo-text.png', 'logo-zunk.svg', 'logo-alien.png', 'rimk-like.png', 'zunk-dislike.png']) {
   fs.copyFileSync(path.join(__dirname, f), path.join(out, f));
 }
 // Avatares: PNGs das camadas (alien, acessórios, fundos e ícones)

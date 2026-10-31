@@ -1,0 +1,151 @@
+/* ============================================================
+   RimkRadio — TEMA DE HALLOWEEN
+   Só vale com <html class="halloween"> (halloween.js liga/desliga).
+   Troca o verde neon por laranja abóbora + roxo e adiciona as decorações.
+   O layout não muda: as decorações ficam em camadas fixas que não pegam clique.
+   ============================================================ */
+
+/* camadas de decoração: escondidas quando o tema está desligado */
+.hw-layer { display: none; }
+html.halloween .hw-layer { display: block; }
+.hw-back  { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.hw-front { position: fixed; inset: 0; z-index: 60; pointer-events: none; overflow: hidden; }
+
+/* ---------- paleta ---------- */
+html.halloween {
+    --blue: #FF7A1A;                 /* destaque: laranja abóbora (era o verde neon) */
+    --accent-rgb: 255 122 26;
+    --hw-purple: #9B5CFF;
+    --hw-purple-rgb: 155 92 255;
+}
+html.halloween ::selection { background: var(--blue); color: #0A0510; }
+
+html.halloween body {
+    background-color: #070510;
+    background-image:
+        radial-gradient(60% 50% at 15% 0%, rgb(var(--accent-rgb) / .20), transparent 70%),
+        radial-gradient(55% 45% at 100% 100%, rgb(var(--hw-purple-rgb) / .18), transparent 70%),
+        radial-gradient(35% 30% at 85% 8%, rgb(var(--hw-purple-rgb) / .10), transparent 70%);
+}
+html.halloween .horizon {
+    background-image:
+        linear-gradient(to top, rgb(var(--hw-purple-rgb) / .26) 1px, transparent 1px),
+        linear-gradient(to right, rgb(var(--hw-purple-rgb) / .14) 1px, transparent 1px);
+}
+html.halloween .panel { background: rgba(14, 9, 20, .74); }
+html.halloween .panel, html.halloween .player-frame {
+    box-shadow: 0 0 22px rgb(var(--hw-purple-rgb) / .10), 0 12px 40px rgba(0, 0, 0, .6);
+}
+html.halloween .player-frame {
+    box-shadow: 0 0 0 4px rgb(var(--accent-rgb) / .08), 0 0 48px rgb(var(--accent-rgb) / .30), 0 24px 60px rgba(0, 0, 0, .6);
+}
+html.halloween .ships { display: none; }            /* naves saem, entram os morcegos */
+
+/* título da tela de login em fonte de terror (mesma altura de linha: o layout não muda) */
+html.halloween #auth-title {
+    font-family: 'Creepster', 'Exo 2', cursive;
+    font-style: normal; font-weight: 400 !important;
+    font-size: 1.75rem; line-height: 2rem; letter-spacing: .06em;
+    text-shadow: 0 0 14px rgb(var(--accent-rgb) / .65);
+}
+
+/* chapéu de bruxa no alien do cabeçalho */
+html.halloween header > div:first-child { position: relative; }
+html.halloween header > div:first-child::before {
+    content: ''; position: absolute; left: -4px; top: -17px; width: 38px; height: 34px; z-index: 3; pointer-events: none;
+    transform: rotate(-14deg); filter: drop-shadow(0 0 5px rgb(var(--hw-purple-rgb) / .7));
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 40'%3E%3Cellipse cx='22' cy='34' rx='20' ry='5' fill='%232B1250'/%3E%3Cpath d='M10 34L22 8Q26 0 31 9L35 34Z' fill='%234B1F8A'/%3E%3Cpath d='M10.5 29L34 29L35 34L9.5 34Z' fill='%23FF7A1A'/%3E%3Crect x='19' y='28' width='7' height='7' rx='1' fill='none' stroke='%23FFD34D' stroke-width='1.6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* botão 🎃 do cabeçalho */
+#hw-btn { cursor: pointer; padding-inline: .6rem; line-height: 1; }
+#hw-btn[aria-pressed="false"] { opacity: .55; filter: grayscale(1); }
+html.halloween #hw-btn { border-color: rgb(var(--accent-rgb) / .55); box-shadow: 0 0 14px rgb(var(--accent-rgb) / .25); }
+
+/* ---------- lua ---------- */
+.hw-moon {
+    position: absolute; top: 7vh; right: 7vw; width: clamp(110px, 15vw, 230px); aspect-ratio: 1; border-radius: 50%; opacity: .45;
+    background:
+        radial-gradient(circle at 30% 28%, rgba(255, 255, 255, .55), transparent 38%),
+        radial-gradient(circle at 68% 62%, rgba(176, 128, 78, .38) 0 9%, transparent 10%),
+        radial-gradient(circle at 38% 70%, rgba(176, 128, 78, .32) 0 6%, transparent 7%),
+        radial-gradient(circle at 62% 30%, rgba(176, 128, 78, .30) 0 5%, transparent 6%),
+        radial-gradient(circle at 50% 50%, #FFD9A0, #F5B46A 70%, #D98A45);
+    box-shadow: 0 0 60px 10px rgba(255, 170, 80, .28), 0 0 160px 50px rgba(255, 120, 40, .12);
+}
+
+/* ---------- névoa ---------- */
+.hw-fog {
+    position: absolute; left: -30%; bottom: -4vh; width: 160%; height: 34vh;
+    background:
+        radial-gradient(40% 70% at 15% 100%, rgb(var(--hw-purple-rgb) / .16), transparent 70%),
+        radial-gradient(35% 60% at 50% 100%, rgb(var(--accent-rgb) / .10), transparent 70%),
+        radial-gradient(40% 70% at 85% 100%, rgb(var(--hw-purple-rgb) / .14), transparent 70%);
+    animation: hw-fog 48s ease-in-out infinite alternate;
+}
+.hw-fog.b { height: 24vh; opacity: .75; animation-duration: 70s; animation-direction: alternate-reverse; }
+@keyframes hw-fog { from { transform: translateX(-6%); } to { transform: translateX(6%); } }
+
+/* ---------- morcegos ---------- */
+.hw-bat { position: absolute; left: 0; top: var(--y); color: #4B2A82; animation: hw-fly var(--dur) linear var(--delay) infinite; will-change: transform; }
+.hw-bat.rtl { animation-name: hw-fly-rtl; }
+.hw-bat svg { display: block; width: var(--w); height: auto; overflow: visible; animation: hw-bob 2.6s ease-in-out infinite alternate;
+    filter: drop-shadow(0 0 2px rgb(var(--hw-purple-rgb) / .9)); }
+.hw-bat .wl, .hw-bat .wr { transform-box: fill-box; animation: hw-flap .32s ease-in-out infinite alternate; }
+.hw-bat .wl { transform-origin: 100% 40%; }
+.hw-bat .wr { transform-origin: 100% 40%; }   /* o <g> pai já espelha o lado direito */
+@keyframes hw-fly     { from { transform: translateX(-18vw); } to { transform: translateX(118vw); } }
+@keyframes hw-fly-rtl { from { transform: translateX(118vw); } to { transform: translateX(-18vw); } }
+@keyframes hw-bob     { from { transform: translateY(-14px); } to { transform: translateY(14px); } }
+@keyframes hw-flap    { from { transform: scaleY(1); } to { transform: scaleY(.4); } }
+
+/* ---------- fantasmas ---------- */
+.hw-ghost { position: absolute; left: 0; top: var(--y); opacity: .16; animation: hw-drift var(--dur) linear var(--delay) infinite; will-change: transform; }
+.hw-ghost svg { display: block; width: var(--w); height: auto; animation: hw-float 4.5s ease-in-out infinite alternate;
+    filter: drop-shadow(0 0 12px rgb(var(--hw-purple-rgb) / .9)); }
+@keyframes hw-drift { from { transform: translateX(-12vw); } to { transform: translateX(112vw); } }
+@keyframes hw-float { from { transform: translateY(-12px) rotate(-4deg); } to { transform: translateY(12px) rotate(4deg); } }
+
+/* ---------- brasas subindo ---------- */
+.hw-ember {
+    position: absolute; bottom: -12px; width: var(--s); height: var(--s); border-radius: 50%;
+    background: #FFB23A; box-shadow: 0 0 8px 2px rgb(var(--accent-rgb) / .7);
+    opacity: 0; animation: hw-ember var(--dur) linear var(--delay) infinite; will-change: transform, opacity;
+}
+@keyframes hw-ember {
+    0%   { transform: translate(0, 0) scale(1); opacity: 0; }
+    10%  { opacity: .9; }
+    100% { transform: translate(var(--dx), -105vh) scale(.4); opacity: 0; }
+}
+
+/* ---------- abóboras (só nas telas de login / salas; dentro da sala ficam escondidas) ---------- */
+.hw-pump { position: absolute; bottom: -6px; filter: drop-shadow(0 0 24px rgba(255, 110, 0, .45)); }
+.hw-pump svg { display: block; width: 100%; height: auto; }
+.hw-pump.l { left: 1.5vw; width: clamp(80px, 9vw, 140px); }
+.hw-pump.r { right: 2vw; width: clamp(60px, 7vw, 110px); }
+.hw-face { animation: hw-flicker 3.4s steps(1, end) infinite; }
+.hw-pump.r .hw-face { animation-delay: -1.3s; }
+@keyframes hw-flicker {
+    0%, 100% { opacity: 1; } 8% { opacity: .78; } 14% { opacity: 1; } 41% { opacity: .85; } 47% { opacity: 1; } 72% { opacity: .72; } 78% { opacity: .96; }
+}
+html.hw-in-room .hw-pump, html.hw-in-room .hw-spider { display: none; }
+html.hw-in-room .hw-moon { opacity: .22; }
+
+/* ---------- teias e aranha (acima do cabeçalho, sem pegar clique) ---------- */
+.hw-web { position: absolute; top: 0; width: clamp(64px, 5.5vw, 100px); color: rgba(236, 226, 255, .45); }
+.hw-web svg { display: block; width: 100%; height: auto; }
+.hw-web.tl { left: 0; }
+.hw-web.tr { right: 0; transform: scaleX(-1); }
+
+.hw-spider { position: absolute; top: 0; left: 32%; width: 26px; animation: hw-lower 9s ease-in-out infinite; }
+.hw-spider::before { content: ''; position: absolute; left: 50%; top: -120px; width: 1px; height: 120px; background: rgba(236, 226, 255, .45); }
+.hw-spider-in { display: block; transform-origin: 50% 0; animation: hw-sway 3.6s ease-in-out infinite alternate; }
+.hw-spider svg { display: block; width: 100%; height: auto; }
+@keyframes hw-lower { 0%, 100% { transform: translateY(8px); } 50% { transform: translateY(38px); } }
+@keyframes hw-sway  { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
+
+/* ---------- acessibilidade: sem movimento, sem bichos voando ---------- */
+@media (prefers-reduced-motion: reduce) {
+    .hw-bat, .hw-ghost, .hw-ember { display: none; }
+    .hw-fog, .hw-face, .hw-spider, .hw-spider-in { animation: none; }
+}

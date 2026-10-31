@@ -5,7 +5,7 @@ tailwind.config = {
             colors: {
                 ink: '#050605',
                 npanel: '#0A0E08',
-                nblue: '#99FF00',
+                nblue: 'rgb(var(--accent-rgb) / <alpha-value>)',
                 nyellow: '#E8E8E3',
                 nline: '#24380F'
             },

@@ -139,10 +139,10 @@
   .cin-b.pp:hover{background:#CCFF66;color:#000}
   .cin-b small{font:700 11px 'Exo 2',system-ui,sans-serif;margin-left:2px}
 
-  #cin-menu{position:absolute;right:14px;bottom:86px;z-index:6;min-width:270px;max-width:calc(100% - 28px);padding:6px;border:1px solid rgba(153,255,0,.35);border-radius:10px;background:rgba(6,9,6,.97);box-shadow:0 8px 30px rgba(0,0,0,.7)}
+  #cin-menu{position:absolute;right:14px;bottom:86px;z-index:6;min-width:270px;max-width:calc(100% - 28px);padding:6px;border:1px solid rgb(var(--accent-rgb) / .35);border-radius:10px;background:rgba(6,9,6,.97);box-shadow:0 8px 30px rgba(0,0,0,.7)}
   .cin-mi{width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border:0;border-radius:7px;background:transparent;color:#E8E8E3;font:600 13px 'Exo 2',system-ui,sans-serif;text-align:left;cursor:pointer}
   .cin-mi i{width:16px;text-align:center;color:#8E9A88}
-  .cin-mi:hover,.cin-mi:focus-visible{background:rgba(153,255,0,.12);outline:none}
+  .cin-mi:hover,.cin-mi:focus-visible{background:rgb(var(--accent-rgb) / .12);outline:none}
   .cin-mi:hover i{color:var(--blue,#99FF00)}
   .cin-mi.danger,.cin-mi.danger i{color:#FF5C7A}
   .cin-mi.danger:hover{background:rgba(255,56,96,.15)}
@@ -155,8 +155,8 @@
   .cin-sep{height:1px;margin:5px 4px;background:rgba(255,255,255,.1)}
 
   #cin-msg{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:18px}
-  .cin-card{max-width:440px;padding:22px 26px;border:1px solid rgba(153,255,0,.35);border-radius:12px;background:rgba(6,9,6,.94);text-align:center;box-shadow:0 0 30px rgba(153,255,0,.08)}
-  .cin-ico{font-size:30px;color:var(--blue,#99FF00);margin-bottom:10px;filter:drop-shadow(0 0 10px rgba(153,255,0,.5))}
+  .cin-card{max-width:440px;padding:22px 26px;border:1px solid rgb(var(--accent-rgb) / .35);border-radius:12px;background:rgba(6,9,6,.94);text-align:center;box-shadow:0 0 30px rgb(var(--accent-rgb) / .08)}
+  .cin-ico{font-size:30px;color:var(--blue,#99FF00);margin-bottom:10px;filter:drop-shadow(0 0 10px rgb(var(--accent-rgb) / .5))}
   .cin-card .t{font-weight:700;font-size:16px;color:#fff}
   .cin-card .s{margin-top:6px;font-size:13px;color:#C3CBBE;word-break:break-word}
   .cin-card .s:empty{display:none}

@@ -194,8 +194,139 @@
             tone(c, { type: 'triangle', f0: 1976, f1: 2010, t: t + 0.22, dur: 0.24, peak: 0.04, attack: 0.008, wet: 0.65, dest: lp });
         }
 
+        /* ------------------------------------------------------------
+           VERSÃO HALLOWEEN (mais macabra) — mesmas ocasiões, mesma duração
+           aproximada e volume discreto; só troca o "clima" dos sons.
+           Vale quando window.RIMK_HALLOWEEN === true (veja halloween.js).
+           ------------------------------------------------------------ */
+        const spooky = () => window.RIMK_HALLOWEEN === true;
+        let noiseBuf = null;
+        function noiseBuffer(c) {
+            if (noiseBuf && noiseBuf.sampleRate === c.sampleRate) return noiseBuf;
+            const len = c.sampleRate * 2, b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0);
+            for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+            return (noiseBuf = b);
+        }
+        // ruído filtrado: vento, sussurro, estalo de osso
+        function hiss(c, { t, dur, peak, f0, f1, Q = 1, type = 'bandpass', attack = 0.02, wet = 0, dest }) {
+            const s = c.createBufferSource(); s.buffer = noiseBuffer(c); s.loop = true;
+            const bp = c.createBiquadFilter(); bp.type = type; bp.Q.value = Q;
+            bp.frequency.setValueAtTime(f0, t);
+            if (f1 && f1 !== f0) bp.frequency.exponentialRampToValueAtTime(f1, t + dur);
+            const g = c.createGain();
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(peak, t + attack);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+            s.connect(bp); bp.connect(g); g.connect(dest || master);
+            if (wet && echo) { const w = c.createGain(); w.gain.value = wet; g.connect(w); w.connect(echo); }
+            s.start(t, Math.random()); s.stop(t + dur + 0.05);
+        }
+        // rangido de porta/caixão: serra com a altura "tremendo" de forma irregular
+        function creak(c, { t, dur, peak, base = 90, wet = 0, dest }) {
+            const o = c.createOscillator(); o.type = 'sawtooth';
+            for (let k = 0; k <= dur; k += 0.03) o.frequency.setValueAtTime(base * (0.7 + Math.random() * 0.9), t + k);
+            const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 6;
+            bp.frequency.setValueAtTime(500, t); bp.frequency.linearRampToValueAtTime(1100, t + dur);
+            const g = c.createGain();
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(peak, t + dur * 0.25);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+            o.connect(bp); bp.connect(g); g.connect(dest || master);
+            if (wet && echo) { const w = c.createGain(); w.gain.value = wet; g.connect(w); w.connect(echo); }
+            o.start(t); o.stop(t + dur + 0.05);
+        }
+        // sino de igreja: parciais que não são múltiplos exatos (soa "oco" e agourento)
+        function bell(c, { f, t, peak, dur, wet = 0.5, dest }) {
+            [[1, 1], [2.0, 0.6], [2.76, 0.42], [5.4, 0.22], [8.93, 0.1]].forEach(([r, a], i) => {
+                tone(c, { type: 'sine', f0: f * r, t, dur: dur * (1 - i * 0.16), peak: peak * a, attack: 0.004, wet, dest });
+            });
+        }
+        // caixinha de música desafinada
+        function box(c, { f, t, peak = 0.05, dur = 0.4, dest }) {
+            tone(c, { type: 'sine', f0: f, f1: f * 0.995, t, dur, peak, attack: 0.004, wet: 0.6, dest });
+            tone(c, { type: 'triangle', f0: f * 3.01, t, dur: dur * 0.4, peak: peak * 0.3, attack: 0.003, dest });
+        }
+        // lamento de fantasma: dois tons a um semitom de distância (batimento dissonante) + vibrato lento
+        function wail(c, { t, dur, f0, fpk, fend, peak }) {
+            [1, 1.0595].forEach((r, i) => {
+                const o = tone(c, { type: i ? 'triangle' : 'sine', f0: f0 * r, t, dur, peak: peak * (i ? 0.6 : 1), attack: dur * 0.22, wet: 0.6 });
+                o.frequency.setValueAtTime(f0 * r, t);
+                o.frequency.exponentialRampToValueAtTime(fpk * r, t + dur * 0.5);
+                o.frequency.exponentialRampToValueAtTime(fend * r, t + dur);
+                const lfo = c.createOscillator(), lg = c.createGain();
+                lfo.frequency.setValueAtTime(4.5, t); lfo.frequency.linearRampToValueAtTime(9, t + dur);
+                lg.gain.value = 12; lfo.connect(lg); lg.connect(o.frequency);
+                lfo.start(t); lfo.stop(t + dur + 0.05);
+            });
+        }
+
+        // alguém entrou: porta rangendo + lamento + sino grave + caixinha de música descendo (acorde diminuto)
+        function joinH() {
+            const c = ready(); if (!c) return;
+            const now = Date.now(); if (now - lastJoin < 600) return; lastJoin = now;
+            const t = c.currentTime + 0.02;
+            creak(c, { t, dur: 0.55, peak: 0.03, base: 85, wet: 0.3 });
+            wail(c, { t: t + 0.1, dur: 1.1, f0: 196, fpk: 466, fend: 175, peak: 0.1 });
+            bell(c, { f: 98, t: t + 0.55, peak: 0.075, dur: 1.5, wet: 0.6 });
+            [1760, 1480, 1245].forEach((f, i) => box(c, { f, t: t + 0.7 + i * 0.12, peak: 0.04, dur: 0.45 }));
+        }
+
+        // mensagem nova: "toc-toc" de osso + estalo + ping dissonante (segunda menor) bem baixinho
+        function chatH() {
+            const c = ready(); if (!c) return;
+            const now = Date.now(); if (now - lastChat < 300) return; lastChat = now;
+            const t = c.currentTime + 0.01;
+            tone(c, { type: 'sine', f0: 190, f1: 95, t, dur: 0.09, peak: 0.11, attack: 0.004 });
+            hiss(c, { t, dur: 0.05, peak: 0.05, f0: 1800, f1: 900, Q: 2, attack: 0.002 });
+            tone(c, { type: 'sine', f0: 230, f1: 120, t: t + 0.11, dur: 0.08, peak: 0.07, attack: 0.004 });
+            const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3000; lp.connect(master);
+            tone(c, { type: 'sine', f0: 880, t: t + 0.17, dur: 0.32, peak: 0.018, attack: 0.01, wet: 0.5, dest: lp });
+            tone(c, { type: 'sine', f0: 932, t: t + 0.17, dur: 0.32, peak: 0.018, attack: 0.01, wet: 0.5, dest: lp });
+        }
+
+        // like (Rimk): caixinha de música subindo em tom menor + sino distante (aprovação... assombrada)
+        function likeH() {
+            const c = ready(); if (!c) return;
+            const now = Date.now(); if (now - lastReact < 250) return; lastReact = now;
+            const t = c.currentTime + 0.01;
+            [880, 1047, 1319].forEach((f, i) => box(c, { f, t: t + i * 0.09, peak: 0.032, dur: 0.38 }));
+            bell(c, { f: 220, t: t + 0.18, peak: 0.02, dur: 0.7, wet: 0.7 });
+        }
+        // deslike (Zunk): rosnado grave caindo + batida de coração + rangido de caixão
+        function dislikeH() {
+            const c = ready(); if (!c) return;
+            const now = Date.now(); if (now - lastReact < 250) return; lastReact = now;
+            const t = c.currentTime + 0.01;
+            const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(900, t); lp.frequency.exponentialRampToValueAtTime(180, t + 0.6); lp.connect(master);
+            const g = tone(c, { type: 'sawtooth', f0: 123, f1: 55, t, dur: 0.6, peak: 0.07, attack: 0.02, wet: 0.3, dest: lp });
+            const lfo = c.createOscillator(), lg = c.createGain();
+            lfo.frequency.value = 28; lg.gain.value = 9; lfo.connect(lg); lg.connect(g.frequency); lfo.start(t); lfo.stop(t + 0.65);
+            tone(c, { type: 'sine', f0: 98, t, dur: 0.5, peak: 0.04, attack: 0.02, dest: lp });
+            tone(c, { type: 'sine', f0: 139, t, dur: 0.5, peak: 0.03, attack: 0.02, dest: lp });
+            tone(c, { type: 'sine', f0: 65, f1: 38, t, dur: 0.22, peak: 0.085, attack: 0.006 });
+            tone(c, { type: 'sine', f0: 60, f1: 36, t: t + 0.2, dur: 0.28, peak: 0.065, attack: 0.006 });
+            creak(c, { t: t + 0.1, dur: 0.4, peak: 0.018, base: 70 });
+        }
+
+        // post novo no feed: sussurro de vento subindo + notas de theremin dissonantes + tique de sino
+        function feedH() {
+            const c = ready(); if (!c) return;
+            const now = Date.now(); if (now - lastFeed < 400) return; lastFeed = now;
+            const t = c.currentTime + 0.01;
+            hiss(c, { t, dur: 0.5, peak: 0.05, f0: 1500, f1: 3200, Q: 4, attack: 0.18, wet: 0.5 });
+            const th = tone(c, { type: 'sine', f0: 659, t: t + 0.12, dur: 0.4, peak: 0.04, attack: 0.1, wet: 0.7 });
+            th.frequency.setValueAtTime(659, t + 0.12); th.frequency.exponentialRampToValueAtTime(622, t + 0.5);
+            const lfo = c.createOscillator(), lg = c.createGain();
+            lfo.frequency.value = 6; lg.gain.value = 8; lfo.connect(lg); lg.connect(th.frequency); lfo.start(t + 0.12); lfo.stop(t + 0.55);
+            bell(c, { f: 392, t: t + 0.3, peak: 0.025, dur: 0.5, wet: 0.7 });
+        }
+
         return {
-            join, chat, like, dislike, feed,
+            join: () => (spooky() ? joinH() : join()),
+            chat: () => (spooky() ? chatH() : chat()),
+            like: () => (spooky() ? likeH() : like()),
+            dislike: () => (spooky() ? dislikeH() : dislike()),
+            feed: () => (spooky() ? feedH() : feed()),
             isOn: () => on,
             set(v) { on = !!v; try { localStorage.setItem(KEY, on ? 'on' : 'off'); } catch (e) {} if (on) unlock(); }
         };
@@ -217,6 +348,8 @@
     };
     window.addEventListener('DOMContentLoaded', updateSoundBtn);
     updateSoundBtn();
+    // ao ligar o tema de Halloween pelo botão 🎃, toca o som de entrada macabro
+    window.addEventListener('rimk:halloween', (e) => { if (e.detail && e.detail.user && e.detail.on) sfx.join(); });
 
     /* ============================================================
        CAMADA DE DADOS  (local  ou  firebase)
@@ -250,7 +383,7 @@
     const nameColor = (name) => { let h = 0; for (const ch of String(name || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return NEON[h % NEON.length]; };
     /* ---------- Categorias de sala (ícone + cor) ---------- */
     const CATEGORIES = [
-        { key: 'musica',   label: 'Música',   icon: 'fa-music',            color: '#99FF00' },
+        { key: 'musica',   label: 'Música',   icon: 'fa-music',            color: 'var(--blue)' },
         { key: 'podcast',  label: 'Podcast',  icon: 'fa-microphone-lines', color: '#FFD60A' },
         { key: 'video',    label: 'Vídeos',   icon: 'fa-video',            color: '#00E5FF' },
         { key: 'jogos',    label: 'Jogos',    icon: 'fa-gamepad',          color: '#B070FF' },
@@ -1267,7 +1400,7 @@
         if (key === roomListKey) return;          // nada mudou: não mexe na tela
         roomListKey = key;
         if (roomList === null) fillRoomLists('<div class="room-empty">Procurando salas abertas...</div>');
-        else if (!roomList.length) fillRoomLists('<div class="room-empty"><i class="fa-regular fa-moon text-2xl mb-2 block text-[#99FF00]"></i>Nenhuma sala aberta agora.<br>Crie a primeira!</div>');
+        else if (!roomList.length) fillRoomLists('<div class="room-empty"><i class="fa-regular fa-moon text-2xl mb-2 block text-nblue"></i>Nenhuma sala aberta agora.<br>Crie a primeira!</div>');
         else fillRoomLists(roomList.map(r => { const c = catOf(r.cat); return `<button type="button" class="room-item" data-room="${r.id}" style="--cat:${c.color}" title="Código da sala: ${r.id} · ${esc(c.label)}">
                 <span class="room-ico"><i class="fa-solid ${c.icon}" aria-hidden="true"></i></span>
                 <span class="room-main">
@@ -2604,7 +2737,7 @@
         container.innerHTML = playlist.map((song, i) => {
             const active = i === currentIndex;
             return `
-            <div data-idx="${i}" draggable="true" class="song-row flex items-center justify-between p-3 rounded-lg mb-2 transition ${active ? 'bg-nblue/10 border border-nblue shadow-[0_0_14px_rgba(153,255,0,0.25)]' : 'bg-black/40 border border-white/5 hover:border-white/20'}">
+            <div data-idx="${i}" draggable="true" class="song-row flex items-center justify-between p-3 rounded-lg mb-2 transition ${active ? 'bg-nblue/10 border border-nblue song-glow' : 'bg-black/40 border border-white/5 hover:border-white/20'}">
                 <div class="flex-1 cursor-pointer flex items-center min-w-0" data-tip="${esc(song.title || song.videoId)}" onclick="playSpecificSong(${i})">
                     <div class="w-8 h-8 shrink-0 rounded-full flex items-center justify-center font-mono text-xs mr-3 ${active ? 'bg-nyellow text-black' : 'bg-white/5 text-gray-400'}">
                         ${active ? '<i class="fa-solid fa-music animate-pulse"></i>' : (i + 1)}
