@@ -27,7 +27,8 @@
   let ls = null;                        // sessão atual (ou null)
   let helloSent = false, pend = { sid: '', ids: new Set() };
   let wakeLock = null, quietTimer = null, ytMuted = null;
-  let loadSeq = 0, lsV = 1, lastAct = 0, overUi = false, menuOpen = false, idleAtDown = false, bound = false;
+  let subSize = 'm', loadSeq = 0, lsV = 1, lastAct = 0, overUi = false, menuOpen = false, idleAtDown = false, bound = false;
+  try { const ss = localStorage.getItem('cinSubSize'); if (ss === 's' || ss === 'm' || ss === 'l') subSize = ss; } catch (e) {}
   try { const sv = parseFloat(localStorage.getItem('cinVol')); if (sv >= 0 && sv <= 1) lsV = sv; } catch (e) {}
 
   /* ---------- util ---------- */
@@ -100,9 +101,12 @@
   #cin-video{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:contain;background:#000}
   #cin-video::cue{background:rgba(0,0,0,.68);color:#fff;font-family:'Exo 2',system-ui,sans-serif;line-height:1.25}
 
+  #cin-layer{--sub-fs:clamp(20px,3.2vh + .9vw,52px)}
+  #cin-layer[data-sub="s"]{--sub-fs:clamp(15px,2.2vh + .6vw,38px)}
+  #cin-layer[data-sub="l"]{--sub-fs:clamp(27px,4.4vh + 1.2vw,70px)}
   #cin-sub{position:absolute;left:0;right:0;bottom:26px;z-index:2;display:flex;justify-content:center;padding:0 6%;pointer-events:none;transition:bottom .25s}
   #cin-layer:not(.idle) #cin-sub{bottom:104px}
-  #cin-sub span{display:inline-block;max-width:100%;padding:2px 12px;border-radius:6px;background:rgba(0,0,0,.62);color:#fff;text-align:center;line-height:1.3;font-weight:600;font-size:clamp(16px,2.2vh + .7vw,38px);text-shadow:0 1px 4px #000;white-space:pre-line}
+  #cin-sub span{display:inline-block;max-width:100%;padding:2px 12px;border-radius:6px;background:rgba(0,0,0,.62);color:#fff;text-align:center;line-height:1.3;font-weight:600;font-size:var(--sub-fs);text-shadow:0 1px 4px #000;white-space:pre-line}
   #cin-sub:empty{display:none}
   .cin-top,.cin-ui{position:absolute;left:0;right:0;z-index:3;transition:opacity .25s}
   .cin-top{top:0;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:12px 16px 38px;background:linear-gradient(rgba(0,0,0,.78),rgba(0,0,0,0));pointer-events:none}
@@ -142,11 +146,12 @@
   .cin-mi:hover i{color:var(--blue,#99FF00)}
   .cin-mi.danger,.cin-mi.danger i{color:#FF5C7A}
   .cin-mi.danger:hover{background:rgba(255,56,96,.15)}
-  .cin-mrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 10px 8px 36px;font-size:12px;color:#C3CBBE}
+  .cin-mrow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:4px 10px 8px 36px;font-size:12px;color:#C3CBBE}
   .cin-mrow .cin-grp{gap:6px}
   .cin-mrow #cin-subo{min-width:44px;text-align:center;font-variant-numeric:tabular-nums}
   .cin-s{padding:3px 8px;border:1px solid #2a3626;border-radius:6px;background:#0d1210;color:#E8E8E3;font:600 12px 'Exo 2',system-ui,sans-serif;cursor:pointer}
   .cin-s:hover{border-color:var(--blue,#99FF00)}
+  .cin-s.act{border-color:var(--blue,#99FF00);background:var(--blue,#99FF00);color:#000}
   .cin-sep{height:1px;margin:5px 4px;background:rgba(255,255,255,.1)}
 
   #cin-msg{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:18px}
@@ -213,6 +218,10 @@
           '<button type="button" class="cin-s" id="cin-subm" title="Legenda aparece mais cedo">-0,5s</button><span id="cin-subo">0 s</span>' +
           '<button type="button" class="cin-s" id="cin-subp" title="Legenda aparece mais tarde">+0,5s</button>' +
           '<button type="button" class="cin-s" id="cin-subx" title="Remover a legenda">✕</button></span></div>' +
+        '<div class="cin-mrow" id="cin-m-sizerow" hidden><span>Tamanho da legenda</span><span class="cin-grp">' +
+          '<button type="button" class="cin-s" id="cin-sz-s" title="Legenda pequena">Pequena</button>' +
+          '<button type="button" class="cin-s" id="cin-sz-m" title="Legenda média">Média</button>' +
+          '<button type="button" class="cin-s" id="cin-sz-l" title="Legenda grande">Grande</button></span></div>' +
         '<div class="cin-sep"></div>' +
         '<button type="button" class="cin-mi" id="cin-m-swap"><i class="fa-solid fa-file-video"></i><span>Trocar meu arquivo</span></button>' +
         '<button type="button" class="cin-mi" id="cin-m-new"><i class="fa-solid fa-clapperboard"></i><span>Abrir outro filme para a sala</span></button>' +
@@ -237,7 +246,7 @@
 
     box.appendChild(layer); box.appendChild(lsGrp); box.appendChild(lsInput); box.appendChild(subInput);
 
-    const ids = ['video', 'sub', 'title', 'chip', 'led', 'chip-t', 'msg', 'msg-t', 'msg-s', 'pick', 'resume', 'new', 'later', 'ui', 'cur', 'dur', 'seek', 'back', 'pp', 'fwd', 'mute', 'vol', 'sync', 'cc', 'menubtn', 'fs', 'menu', 'm-sub', 'm-subt', 'm-subrow', 'subm', 'subo', 'subp', 'subx', 'm-swap', 'm-new', 'm-leave', 'm-end'];
+    const ids = ['video', 'sub', 'title', 'chip', 'led', 'chip-t', 'msg', 'msg-t', 'msg-s', 'pick', 'resume', 'new', 'later', 'ui', 'cur', 'dur', 'seek', 'back', 'pp', 'fwd', 'mute', 'vol', 'sync', 'cc', 'menubtn', 'fs', 'menu', 'm-sub', 'm-subt', 'm-subrow', 'm-sizerow', 'sz-s', 'sz-m', 'sz-l', 'subm', 'subo', 'subp', 'subx', 'm-swap', 'm-new', 'm-leave', 'm-end'];
     els = {};
     ids.forEach(k => { els[k.replace(/-(\w)/g, (m, c) => c.toUpperCase())] = $('cin-' + k); });
     bind();
@@ -280,6 +289,8 @@
     // menu
     els.mSub.addEventListener('click', () => { closeMenu(); if (ls && ls.url) subInput.click(); });
     subInput.addEventListener('change', () => { const f = subInput.files && subInput.files[0]; subInput.value = ''; if (f) lsSubLoad(f); });
+    ['s', 'm', 'l'].forEach(k => els['sz' + k.toUpperCase()].addEventListener('click', () => setSubSize(k)));
+    layer.dataset.sub = subSize;
     els.subm.addEventListener('click', () => lsSubShift(-0.5));
     els.subp.addEventListener('click', () => lsSubShift(0.5));
     els.subx.addEventListener('click', () => { lsSubClear(); lsUi(); notify('Legenda removida.', 'info'); });
@@ -650,7 +661,8 @@
     els.pp.innerHTML = '<i class="fa-solid ' + (v.paused || v.ended ? 'fa-play' : 'fa-pause') + '"></i>';
     lsVolUi();
     // menu
-    els.mSubrow.hidden = !ls.subs;
+    els.mSubrow.hidden = !ls.subs; els.mSizerow.hidden = !ls.subs;
+    ['s', 'm', 'l'].forEach(k => els['sz' + k.toUpperCase()].classList.toggle('act', subSize === k));
     tr(els.mSubt, ls.subs ? 'Trocar legenda' : 'Carregar legenda (.srt / .vtt)');
     tr(els.subo, ((ls.subOff || 0) > 0 ? '+' : '') + String(ls.subOff || 0).replace('.', ',') + ' s');
     els.cc.classList.toggle('act', !!ls.subs);
@@ -688,6 +700,11 @@
       if (t) cues.push({ s: a, e: b, t });
     });
     return cues;
+  }
+  function setSubSize(k) {
+    subSize = k; if (layer) layer.dataset.sub = k;
+    try { localStorage.setItem('cinSubSize', k); } catch (e) {}
+    lsUi();
   }
   function subShow(track) {
     if (!els.sub) return;
