@@ -85,9 +85,9 @@
   const CSS = `
   body.cin-on #player-head, body.cin-on .player-frame .controls-bar{display:none!important}
   /* desempenho: com o filme aberto, desliga os efeitos de fundo que repintam a tela inteira o tempo todo
-     (linhas de TV em movimento, faixa de brilho, decoração de Halloween, naves, equalizador) e que derrubavam o FPS do vídeo */
+     (linhas de TV em movimento, faixa de brilho, decoração de Natal, naves, equalizador) e que derrubavam o FPS do vídeo */
   body.cin-on::before,body.cin-on::after{animation:none!important;display:none!important}
-  body.cin-on .ships,html body.cin-on .hw-layer,html.halloween body.cin-on .hw-layer{display:none!important}
+  body.cin-on .ships,html body.cin-on .xm-layer,html.christmas body.cin-on .xm-layer{display:none!important}
   body.cin-on .eq span{animation-play-state:paused!important}
   body.cin-on *{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
   #cin-layer{contain:layout paint;isolation:isolate}
