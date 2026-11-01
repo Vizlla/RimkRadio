@@ -84,6 +84,13 @@
      ============================================================ */
   const CSS = `
   body.cin-on #player-head, body.cin-on .player-frame .controls-bar{display:none!important}
+  /* desempenho: com o filme aberto, desliga os efeitos de fundo que repintam a tela inteira o tempo todo
+     (linhas de TV em movimento, faixa de brilho, decoração de Halloween, naves, equalizador) e que derrubavam o FPS do vídeo */
+  body.cin-on::before,body.cin-on::after{animation:none!important;display:none!important}
+  body.cin-on .ships,html body.cin-on .hw-layer,html.halloween body.cin-on .hw-layer{display:none!important}
+  body.cin-on .eq span{animation-play-state:paused!important}
+  body.cin-on *{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+  #cin-layer{contain:layout paint;isolation:isolate}
   @media (min-width:1024px){
     body.cin-on #room-view .room-col-center > .player-frame{flex:1 1 0;min-height:0}
     body.cin-on #room-view .room-col-center .video-box{aspect-ratio:auto;flex:1 1 0;min-height:0}
@@ -598,9 +605,14 @@
     }
     if (!v.seeking && v.readyState >= 3) {
       const ad = Math.abs(diff);
-      if (ad > (force ? 0.25 : 0.8)) { try { v.currentTime = Math.min(exp + (r.self ? 0 : 0.15), dur); } catch (e) {} v.playbackRate = 1; }
-      else if (ad > 0.06) v.playbackRate = 1 - Math.max(-0.1, Math.min(0.1, diff * 0.5));   // adiantado: desacelera; atrasado: acelera
-      else if (v.playbackRate !== 1) v.playbackRate = 1;
+      // Correção suave para não causar tranco: só pula se a diferença for grande; entre 0,25 s e isso, muda a velocidade
+      // de leve (no máx. 4%, em passos de 1%); abaixo de 0,08 s volta à velocidade normal (a faixa do meio mantém, sem ficar mexendo).
+      if (ad > (force ? 0.25 : 1.2)) { try { v.currentTime = Math.min(exp + (r.self ? 0 : 0.15), dur); } catch (e) {} v.playbackRate = 1; }
+      else if (ad > 0.25) {
+        const rate = Math.round((1 - Math.max(-0.04, Math.min(0.04, diff * 0.3))) * 100) / 100;   // adiantado: desacelera; atrasado: acelera
+        if (Math.abs(v.playbackRate - rate) >= 0.01) v.playbackRate = rate;
+      }
+      else if (ad < 0.08 && v.playbackRate !== 1) v.playbackRate = 1;
     }
     if (v.paused && !v.ended && !ls.blocked) {
       const s = ls;
