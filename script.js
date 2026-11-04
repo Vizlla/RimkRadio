@@ -312,6 +312,8 @@
             like: () => (xmas() ? likeX() : like()),
             dislike: () => (xmas() ? dislikeX() : dislike()),
             feed: () => (xmas() ? feedX() : feed()),
+            // permite a outros módulos (emotes.js) tocarem sons sintetizados com o mesmo motor, respeitando o mute
+            raw: (fn) => { const c = ready(); if (!c) return; try { fn(c, { tone, hiss, bell, master, echo }); } catch (e) { console.warn(e); } },
             isOn: () => on,
             set(v) { on = !!v; try { localStorage.setItem(KEY, on ? 'on' : 'off'); } catch (e) {} if (on) unlock(); }
         };
@@ -810,6 +812,10 @@
                 if (roomId !== id || !payload || (payload.k !== 'up' && payload.k !== 'down')) return;
                 try { if (typeof store.onReaction === 'function') store.onReaction({ k: payload.k, by: clip(noCtl(payload.by), 30) }); } catch (e) { console.error(e); }
             });
+            ch.on('broadcast', { event: 'emote' }, ({ payload }) => {
+                if (roomId !== id || !payload || typeof payload.k !== 'string') return;
+                try { if (typeof store.onEmote === 'function') store.onEmote({ k: payload.k, by: clip(noCtl(payload.by), 30) }); } catch (e) { console.error(e); }
+            });
             ch.on('broadcast', { event: 'cin' }, ({ payload }) => {
                 if (roomId !== id) return;
                 try { if (window.RimkCinema) RimkCinema.signal(payload); } catch (e) { console.error(e); }
@@ -906,6 +912,11 @@
         store.voteCounts = async (rid, key) => {
             const { data, error } = await sb.rpc('song_votes_for', { p_room: rid, p_song: key });
             return error ? null : voteRow(data);
+        };
+        // reações da sala (foguete, tomate, fogo, vaia, palmas): só repassa o tipo, a animação roda em cada navegador
+        store.sendEmote = (kind) => {
+            if (!channel) return;
+            try { channel.send({ type: 'broadcast', event: 'emote', payload: { k: String(kind).slice(0, 12), by: clip(clientUsername, 30) } }).catch?.(() => {}); } catch (e) {}
         };
         store.sendReaction = (kind) => {
             if (!channel) return;
@@ -1568,6 +1579,14 @@
         playReaction(p.k, p.by);
         setTimeout(() => refreshVotes(true), 400);
     };
+
+    /* ---------- Reações da sala (emotes.js): foguete, tomate, fogo, vaia e palmas ---------- */
+    store.onEmote = (p) => { if (window.RimkEmotes && p) RimkEmotes.receive(p.k, p.by); };
+    if (window.RimkEmotes) RimkEmotes.init({
+        sound: (fn) => sfx.raw(fn),
+        send: (k) => { if (store.sendEmote) store.sendEmote(k); },
+        user: () => clientUsername
+    });
 
     /* ---------- Ranking DA SALA: músicas com mais likes (cada sala tem o seu) ----------
        Soma os likes de todas as músicas de cada pessoa. Usa a mesma função song_votes_for que o botão de like já usa, então não precisa de SQL novo.

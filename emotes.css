@@ -1,0 +1,79 @@
+/* ============================================================
+   RimkRadio — REAÇÕES NA SALA (veja emotes.js)
+   ============================================================ */
+
+/* camada por cima do vídeo: não captura clique nenhum */
+.em-fx { position: absolute; inset: 0; z-index: 15; pointer-events: none; overflow: hidden; }
+.em-layer { position: absolute; inset: 0; overflow: hidden; }
+.em-layer > * { position: absolute; }
+
+/* partículas, anéis e fumaça */
+.em-p, .em-puff, .em-ember, .em-conf { display: block; position: absolute; will-change: transform, opacity; }
+/* o site zera border-radius de tudo (visual retrô): círculos usam clip-path. Faíscas, brasas e confete ficam quadradinhos (pixels) de propósito */
+.em-puff { clip-path: circle(50%); }
+.em-ember { background: #FFB347; box-shadow: 0 0 8px 2px rgba(255, 140, 30, .85); opacity: 0; }
+.em-ring { display: block; position: absolute; width: 40px; height: 40px; will-change: transform, opacity; }
+.em-ring svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+/* foguete */
+.em-rocket { will-change: transform; filter: drop-shadow(0 0 10px rgb(var(--accent-rgb) / .65)); }
+.em-rocket svg, .em-tomato svg, .em-flame svg, .em-splat svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.em-fl { transform-box: fill-box; transform-origin: 50% 0; animation: emFlame .11s ease-in-out infinite alternate; }
+@keyframes emFlame { from { transform: scaleY(.78) scaleX(.94); } to { transform: scaleY(1.2) scaleX(1.05); } }
+
+/* tomate e mancha */
+.em-tomato { will-change: transform; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .5)); }
+.em-splat { will-change: transform, opacity; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .45)); opacity: 0; }
+
+/* fogo */
+.em-fireglow { inset: auto 0 0 0 !important; height: 62%; opacity: 0;
+    background: radial-gradient(120% 100% at 50% 100%, rgba(255, 120, 20, .78) 0%, rgba(255, 70, 10, .42) 38%, rgba(255, 40, 0, 0) 72%); mix-blend-mode: screen; }
+.em-flame { bottom: -6px; transform-origin: 50% 100%; will-change: transform, opacity; opacity: 0;
+    filter: drop-shadow(0 0 14px rgba(255, 120, 20, .9)); }
+
+/* vaia */
+.em-redvig { inset: 0 !important; opacity: 0;
+    background: radial-gradient(90% 85% at 50% 45%, rgba(255, 60, 80, 0) 45%, rgba(255, 50, 70, .42) 100%); }
+.em-boo { left: 50%; top: 8%; display: flex; white-space: nowrap; opacity: 0; font-family: 'Exo 2', sans-serif; font-weight: 900; font-style: italic; line-height: 1; letter-spacing: .02em;
+    color: #FF6B78; text-shadow: 0 0 10px rgba(255, 93, 108, .85), 0 0 30px rgba(255, 60, 80, .55), 0 3px 0 rgba(60, 0, 8, .85); }
+.em-boo span { display: inline-block; }
+.em-mascot { will-change: transform, opacity; opacity: 0; }
+.em-mascot img { display: block; width: 100%; height: auto; filter: drop-shadow(0 0 12px rgb(var(--accent-rgb) / .55)); user-select: none; }
+
+/* Zunk (vaia) com brilho vermelho, como no botão de deslike */
+.em-layer .em-mascot img[src*="zunk"] { filter: drop-shadow(0 0 12px rgba(255, 93, 108, .55)); }
+
+/* aviso "Fulano jogou um tomate" */
+.em-feed { left: .6rem; bottom: .6rem; display: flex; flex-direction: column; gap: .3rem; align-items: flex-start; z-index: 2; max-width: calc(100% - 1.2rem); }
+.em-chip { display: inline-flex; align-items: center; gap: .4rem; max-width: 100%; padding: .15rem .65rem .15rem .35rem; border-radius: 999px; font-size: .7rem; line-height: 1.2; color: #CCFF66; font-weight: 700;
+    background: rgba(5, 6, 5, .85); border: 1px solid rgb(var(--accent-rgb) / .5); white-space: nowrap; overflow: hidden; }
+.em-chip b { font-weight: 500; color: #C3CBBE; overflow: hidden; text-overflow: ellipsis; }
+.em-chip-name { overflow: hidden; text-overflow: ellipsis; }
+.em-chip-ico { display: inline-flex; width: 1.15rem; height: 1.15rem; flex: none; align-items: center; justify-content: center; }
+.em-chip-ico svg, .em-chip-ico img { width: 100%; height: 100%; object-fit: contain; }
+
+/* menu de reações */
+.em-pop { position: fixed; z-index: 40; display: none; gap: .25rem; padding: .4rem; border-radius: 12px; max-width: calc(100vw - 16px);
+    background: rgba(6, 9, 6, .94); border: 1px solid rgb(var(--accent-rgb) / .5); backdrop-filter: blur(6px);
+    box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / .07), 0 0 26px rgb(var(--accent-rgb) / .25), 0 10px 30px rgba(0, 0, 0, .6); pointer-events: auto; }
+.em-pop.is-open { display: flex; animation: emPopIn .16s ease-out; }
+@keyframes emPopIn { from { opacity: 0; transform: translateY(6px) scale(.96); } to { opacity: 1; transform: none; } }
+.em-opt { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2rem; width: 3.4rem; padding: .4rem .2rem .3rem; border-radius: 9px; border: 1px solid transparent;
+    background: rgba(255, 255, 255, .04); color: #C3CBBE; cursor: pointer; transition: background .15s, border-color .15s, transform .12s, color .15s; }
+.em-opt:hover { background: rgb(var(--accent-rgb) / .12); border-color: rgb(var(--accent-rgb) / .55); color: #fff; transform: translateY(-2px); }
+.em-opt:active { transform: scale(.94); }
+.em-opt:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+.em-opt-ico { display: flex; align-items: center; justify-content: center; width: 1.9rem; height: 1.9rem; }
+.em-opt-ico svg, .em-opt-ico img { width: 100%; height: 100%; object-fit: contain; }
+.em-opt-ico svg { overflow: visible; }
+.em-opt-ico .em-fl { animation: none; }
+.em-opt-cap { font-size: .6rem; font-weight: 700; letter-spacing: .02em; }
+.em-opt.is-hit .em-opt-ico { animation: emHit .35s ease; }
+@keyframes emHit { 0% { transform: scale(1); } 40% { transform: scale(1.4) rotate(-12deg); } 100% { transform: scale(1); } }
+
+#emote-btn.is-on, #fs-emote-btn.is-on { color: var(--blue); border-color: var(--blue); background: rgb(var(--accent-rgb) / .12); }
+
+@media (max-width: 380px) { .em-opt { width: 3.05rem; } }
+@media (prefers-reduced-motion: reduce) {
+    .em-fl, .em-pop.is-open, .em-opt.is-hit .em-opt-ico { animation: none; }
+}
