@@ -971,7 +971,10 @@ input::-moz-range-thumb, input::-moz-range-track { border-radius: 0 !important; 
 /* 6) Avatares / miniaturas / cartões do chat: quadrados com borda reta */
 .av, .av-lg, .av-preview, .av-preview .av, .rank-av, .chip-av, .member-avatar, .pf-avatar { border-radius: 0 !important; }
 .pf-pop-in { border-width: 1px; box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 0 0 4px color-mix(in srgb, var(--hud) 10%, transparent), 0 14px 38px rgba(0,0,0,.65); }
-.song-row, .room-item, .msg { border-left-width: 2px; }
+.song-row, .room-item { border-left-width: 2px; }
+/* .msg é só o agrupador da mensagem (o balão já tem a própria borda): sem borda aqui,
+   senão o preflight do Tailwind (border-style: solid + cor clara) desenha uma linha branca ao lado */
+.msg { border-left-width: 0; }
 
 /* 7) Rolagem retangular fina */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
