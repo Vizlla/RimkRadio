@@ -1580,6 +1580,17 @@
         setTimeout(() => refreshVotes(true), 400);
     };
 
+    // barra de controles do player: reorganiza os grupos conforme a largura real dela (veja .controls-bar em styles.css)
+    (() => {
+        const bar = document.querySelector('.controls-bar');
+        if (!bar || !window.ResizeObserver) return;
+        new ResizeObserver(([e]) => {
+            const w = e.contentRect.width + 32;
+            bar.classList.toggle('is-compact', w < 680);
+            bar.classList.toggle('is-narrow', w < 440);
+        }).observe(bar);
+    })();
+
     /* ---------- Reações da sala (emotes.js): foguete, tomate, fogo, vaia e palmas ---------- */
     store.onEmote = (p) => { if (window.RimkEmotes && p) RimkEmotes.receive(p.k, p.by); };
     if (window.RimkEmotes) RimkEmotes.init({
